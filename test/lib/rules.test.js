@@ -39,13 +39,39 @@ describe('rules', () => {
 		assert.deepEqual(Conc('"quotations $', { original: '"quotations $', errors }), [null, '"quotations $'])
 		assert.deepEqual(errors, ["✘ 1:13 | Expected '\"', got end of input"])
 	})
-	// it('tests Conc positive (single quotes)', () => {
-	// 	assert.deepEqual(Conc("'quotations' $"), [["'",'quotations',"'", [' ']], '$'])
-	// })
-	// it('tests Conc positive (regex)', () => {
-	// 	assert.deepEqual(Conc('/[]/ $'), [["/",'[]',"/", [' ']], '$'])
-	// })
-	// it('tests Conc negative', () => {
-	// 	// assert.deepEqual(Conc('12  *$'), [null, '12  *$'])
-	// })
+	it('tests Conc positive (single quotes)', () => {
+		assert.deepEqual(Conc("'quotations' $"), [["'",'quotations',"'", [' ']], '$'])
+	})
+	it('tests Conc negative (single quotes)', () => {
+		const errors = []
+		assert.deepEqual(Conc("'quotations $", { original: "'quotations $", errors }), [null, "'quotations $"])
+		assert.deepEqual(errors, ["✘ 1:13 | Expected ''', got end of input"])
+	})
+	it('tests Conc positive (regex)', () => {
+		assert.deepEqual(Conc('/[]/ $'), [["/",'[]',"/", [' ']], '$'])
+	})
+	it('tests Conc negative (regex)', () => {
+		const errors = []
+		assert.deepEqual(Conc('/[] $', { original: "/[] $", errors }), [null, '/[] $'])
+		assert.deepEqual(errors, ["✘ 1:5 | Expected '/', got end of input"])
+	})
+	it('tests Conc positive ([])', () => {
+	})
+	it('tests Conc negative ([])', () => {
+	})
+	it('tests Conc positive ({})', () => {
+	})
+	it('tests Conc negative ({})', () => {
+	})
+	it('tests Conc positive (())', () => {
+	})
+	it('tests Conc negative (())', () => {
+	})
+	it('tests Conc positive (??)', () => {
+	})
+	it('tests Conc negative (??)', () => {
+	})
+	it('tests Conc negative', () => {
+		assert.deepEqual(Conc('12  *$'), [null, '12  *$'])
+	})
 })
