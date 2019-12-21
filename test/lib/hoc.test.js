@@ -88,19 +88,18 @@ describe('hoc', () => {
 		const errors = []
 		assert.deepEqual(EXPECT(
 			LITERAL('this'),
-			'this',
-			input,
-			undefined,
-			errors
-		)(input), ['this', ' is a text'])
+			'this'
+		)(input, { original: input, errors }), ['this', ' is a text'])
 		assert.deepEqual(errors, [])
 		assert.deepEqual(EXPECT(
 			LITERAL('that'),
 			'that',
-			input,
-			undefined,
-			errors
-		)(input), [null, 'this is a text'])
-		assert.deepEqual(errors, ["✘ 1:-1 | Expected 'that', got 'this is a text...'"])
+		)(input, { original: input, errors }), [null, 'this is a text'])
+		assert.deepEqual(errors, ["✘ 1:0 | Expected 'that', got 'this is a text...'"])
+		assert.deepEqual(EXPECT(
+			LITERAL('that'),
+			'that',
+		)(input, { original: 'original text\nwith some lines\nand then this is a text', errors }), [null, 'this is a text'])
+		assert.deepEqual(errors, ["✘ 1:0 | Expected 'that', got 'this is a text...'", "✘ 3:9 | Expected 'that', got 'this is a text...'"])
 	})
 })
