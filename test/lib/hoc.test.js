@@ -120,5 +120,10 @@ describe('hoc', () => {
 			'that',
 		)(input, { original: 'original text\nwith some lines\nand then this is a text', errors }), [null, 'this is a text'])
 		assert.deepEqual(errors, ["✘ 1:0 | Expected 'that', got 'this is a text...'", "✘ 3:9 | Expected 'that', got 'this is a text...'"])
+		assert.deepEqual(EXPECT(
+			LITERAL('Something'),
+			'Something',
+		)('', { original: 'original text\nwith some lines\nand then this is a text', errors }), [null, ''])
+		assert.deepEqual(errors, ["✘ 1:0 | Expected 'that', got 'this is a text...'", "✘ 3:9 | Expected 'that', got 'this is a text...'", "✘ 3:23 | Expected 'Something', got end of input"])
 	})
 })
