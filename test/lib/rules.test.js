@@ -3,36 +3,71 @@ const {
 	WS,
 	WSs,
 	NT,
-	Conc
+	Conc,
+	Xcep
 } = require('../../lib/rules')
+const {
+	MATCH,
+	LITERAL,
+	CONCAT,
+	DISJUNCTION,
+	OPTION,
+	CLOSURE,
+	REPETITION,
+	EXCEPTION,
+	EXPECT
+} = require('../../lib/hoc')
 
 describe('rules', () => {
 	it('tests WS positive', () => {
-		assert.deepEqual(WS(' is a text'), [' ', 'is a text'])
+		const errors = []
+		assert.deepEqual(WS(' is a text', { errors }), [' ', 'is a text'])
+		assert.deepEqual(errors, [])
 	})
 	it('tests WS negative', () => {
-		assert.deepEqual(WS('this is a text'), [null, 'this is a text'])
+		const errors = []
+		assert.deepEqual(WS('this is a text', { errors }), [null, 'this is a text'])
+		assert.deepEqual(errors, [])
 	})
 	it('tests WSs positive', () => {
-		assert.deepEqual(WSs('    is a text'), [[' ',' ',' ',' '], 'is a text'])
+		const errors = []
+		assert.deepEqual(WSs('    is a text', { errors }), [[' ',' ',' ',' '], 'is a text'])
+		assert.deepEqual(errors, [])
 	})
 	it('tests WSs negative', () => {
-		assert.deepEqual(WSs('this is a text'), [[], 'this is a text'])
+		const errors = []
+		assert.deepEqual(WSs('this is a text', { errors }), [[], 'this is a text'])
+		assert.deepEqual(errors, [])
 	})
 	it('tests NT positive', () => {
-		assert.deepEqual(NT('this is a text'), [['this', [' ']], 'is a text'])
+		const errors = []
+		assert.deepEqual(NT('this is a text', { errors }), [['this', [' ']], 'is a text'])
+		assert.deepEqual(errors, [])
 	})
 	it('tests NT negative', () => {
-		assert.deepEqual(NT('$this is a text'), [null, '$this is a text'])
+		const errors = []
+		assert.deepEqual(NT('$this is a text', { errors }), [null, '$this is a text'])
+		assert.deepEqual(errors, [])
 	})
 	it('tests Conc positive (repetition)', () => {
-		assert.deepEqual(Conc('12  *s$'), [['12', [' ', ' '], '*', [], ['s', []]], '$'])
+		const errors = []
+		assert.deepEqual(Conc('12  *s$', { errors }), [['12', [' ', ' '], '*', [], ['s', []]], '$'])
+		assert.deepEqual(errors, [])
+	})
+	it('tests Conc negative (repetition)', () => {
+		const errors = []
+		assert.deepEqual(Conc('12  s*2$', { errors }), [null, '12  s*2$'])
+		assert.deepEqual(errors, ["✘ 1:0 | Expected '*', got 's*2$...'"])
 	})
 	it('tests Conc positive (NT)', () => {
-		assert.deepEqual(Conc('potato  *s$'), [['potato', [' ', ' ']], '*s$'])
+		const errors = []
+		assert.deepEqual(Conc('potato  *s$', { errors }), [['potato', [' ', ' ']], '*s$'])
+		assert.deepEqual(errors, [])
 	})
 	it('tests Conc positive (double quotes)', () => {
-		assert.deepEqual(Conc('"quotations" $'), [['"','quotations','"', [' ']], '$'])
+		const errors = []
+		assert.deepEqual(Conc('"quotations" $', { errors }), [['"','quotations','"', [' ']], '$'])
+		assert.deepEqual(errors, [])
 	})
 	it('tests Conc negative (double quotes)', () => {
 		const errors = []
@@ -40,7 +75,9 @@ describe('rules', () => {
 		assert.deepEqual(errors, ["✘ 1:13 | Expected '\"', got end of input"])
 	})
 	it('tests Conc positive (single quotes)', () => {
-		assert.deepEqual(Conc("'quotations' $"), [["'",'quotations',"'", [' ']], '$'])
+		const errors = []
+		assert.deepEqual(Conc("'quotations' $", { errors }), [["'",'quotations',"'", [' ']], '$'])
+		assert.deepEqual(errors, [])
 	})
 	it('tests Conc negative (single quotes)', () => {
 		const errors = []
@@ -48,7 +85,9 @@ describe('rules', () => {
 		assert.deepEqual(errors, ["✘ 1:13 | Expected ''', got end of input"])
 	})
 	it('tests Conc positive (regex)', () => {
-		assert.deepEqual(Conc('/[]/ $'), [["/",'[]',"/", [' ']], '$'])
+		const errors = []
+		assert.deepEqual(Conc('/[]/ $', { errors }), [["/",'[]',"/", [' ']], '$'])
+		assert.deepEqual(errors, [])
 	})
 	it('tests Conc negative (regex)', () => {
 		const errors = []
@@ -56,22 +95,53 @@ describe('rules', () => {
 		assert.deepEqual(errors, ["✘ 1:5 | Expected '/', got end of input"])
 	})
 	it('tests Conc positive ([])', () => {
+		const errors = []
+		assert.deepEqual(Conc('[ potato]$', { errors }), [['[', [' '], [[[['potato', []], []], ''], []], ']', []], '$'])
+		assert.deepEqual(errors, [])
 	})
 	it('tests Conc negative ([])', () => {
+		const errors = []
+		assert.deepEqual(Conc('[ potato$', { errors }), [null, '[ potato$'])
+		assert.deepEqual(errors, ["✘ 1:0 | Expected ']', got '$...'"])
 	})
 	it('tests Conc positive ({})', () => {
+		const errors = []
+		assert.deepEqual(Conc('{ potato}$', { errors }), [['{', [' '], [[[['potato', []], []], ''], []], '}', []], '$'])
+		assert.deepEqual(errors, [])
 	})
 	it('tests Conc negative ({})', () => {
-	})
-	it('tests Conc positive (())', () => {
-	})
-	it('tests Conc negative (())', () => {
+		const errors = []
+		assert.deepEqual(Conc('{ potato$', { errors }), [null, '{ potato$'])
+		assert.deepEqual(errors, ["✘ 1:0 | Expected '}', got '$...'"])
 	})
 	it('tests Conc positive (??)', () => {
+		const errors = []
+		assert.deepEqual(Conc('? potato?$', { errors, special: LITERAL(' potato') }), [['?', ' potato', '?', []], '$'])
+		assert.deepEqual(errors, [])
 	})
-	it('tests Conc negative (??)', () => {
+	it('tests Conc negative (?? - fail inner rule)', () => {
+		const errors = []
+		assert.deepEqual(Conc('? potato?$', { errors, special: LITERAL(' protato') }), [null, '? potato?$'])
+		assert.deepEqual(errors, ["✘ 1:0 | Expected 'special rule', got ' potato?$...'"])
+	})
+	it('tests Conc negative (?? - fail presence of ?)', () => {
+		const errors = []
+		assert.deepEqual(Conc('? potato$', { errors, special: LITERAL(' potato') }), [null, '? potato$'])
+		assert.deepEqual(errors, ["✘ 1:0 | Expected '?', got '$...'"])
 	})
 	it('tests Conc negative', () => {
-		assert.deepEqual(Conc('12  *$'), [null, '12  *$'])
+		const errors = []
+		assert.deepEqual(Conc('12  *$', { errors }), [null, '12  *$'])
+		assert.deepEqual(errors, [])
+	})
+	it('tests Xcep positive', () => {
+		const errors = []
+		assert.deepEqual(Xcep('ab c$', { errors }), [[['ab', [' ']], [['c', []]]], '$'])
+		assert.deepEqual(errors, [])
+	})
+	it('tests Xcep negative', () => {
+		const errors = []
+		assert.deepEqual(Xcep('12ab c$', { errors }), [null, '12ab c$'])
+		assert.deepEqual(errors, ["✘ 1:0 | Expected '*', got 'ab c$...'"])
 	})
 })
