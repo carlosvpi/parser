@@ -1,22 +1,14 @@
 const assert = require('assert')
+const { LITERAL } = require('../../lib/hoc')
 const {
 	WS,
 	WSs,
 	NT,
 	Conc,
-	Xcep
+	Xcep,
+	Disj,
+	Rule
 } = require('../../lib/rules')
-const {
-	MATCH,
-	LITERAL,
-	CONCAT,
-	DISJUNCTION,
-	OPTION,
-	CLOSURE,
-	REPETITION,
-	EXCEPTION,
-	EXPECT
-} = require('../../lib/hoc')
 
 describe('rules', () => {
 	it('tests WS positive', () => {
@@ -143,5 +135,32 @@ describe('rules', () => {
 		const errors = []
 		assert.deepEqual(Xcep('12ab c$', { errors }), [null, '12ab c$'])
 		assert.deepEqual(errors, ["✘ 1:0 | Expected '*', got 'ab c$...'"])
+	})
+	it('tests Disj positive (no except)', () => {
+		const errors = []
+		assert.deepEqual(Disj('ab c$', { errors }), [[[['ab', [' ']], [['c', []]]], ''], '$'])
+		assert.deepEqual(errors, [])
+	})
+	it('tests Disj positive (with except)', () => {
+		const errors = []
+		assert.deepEqual(Disj('ab c - potato$', { errors }), [[[['ab', [' ']], [['c', [' ']]]], ['-', [' '], [[[['potato', []], []], ''], []]]], '$'])
+		assert.deepEqual(errors, [])
+	})
+	it('tests Disj negative', () => {
+		const errors = []
+		assert.deepEqual(Disj('12ab c$', { errors }), [null, '12ab c$'])
+		assert.deepEqual(errors, ["✘ 1:0 | Expected '*', got 'ab c$...'"])
+	})
+	it('tests Rule positive', () => {
+		const original = 'S = ab | c;'
+		const errors = []
+		assert.deepEqual(Rule(original, { original, errors }), [[['S',[' ']],'=',[' '],[[[['ab',[' ']],[]],''],[['|',[' '],[[[['c',[]],[]], ''], []]]]], ';', []], ''])
+		assert.deepEqual(errors, [])
+	})
+	it('tests Rule negative (missing ";")', () => {
+		const original = 'S = ab | c'
+		const errors = []
+		assert.deepEqual(Rule(original, { original, errors }), [null, 'S = ab | c'])
+		assert.deepEqual(errors, ["✘ 1:10 | Expected ';', got end of input"])
 	})
 })
