@@ -7,7 +7,8 @@ const {
 	Xcep,
 	Disj,
 	Exp,
-	Rule
+	Rule,
+	EBNF
 } = require('../../lib/rules')
 const { LITERAL } = require('../../lib/hoc')
 
@@ -96,12 +97,12 @@ describe('rules', () => {
 	})
 	it('tests Conc positive ([])', () => {
 		const errors = []
-		assert.deepEqual(Conc('[ potato]$', { errors }), [['Option', ['Disjunction', [['Exception', ['Concatenation', [['NT', 'potato']]]]]]], '$'])
+		assert.deepEqual(Conc('[ potato]$', { errors }), [['Option',['Disjunction',[['Exception',[['Positive',['Concatenation',[['NT','potato']]]],['Negative',null]]]]]],'$'])
 		assert.deepEqual(errors, [])
 	})
 	it('tests Conc positive ([]) long', () => {
 		const errors = []
-		assert.deepEqual(Conc('[ potato | banana]$', { errors }), [['Option',['Disjunction',[['Exception',['Concatenation',[['NT','potato']]]],['Exception',['Concatenation',[['NT','banana']]]]]]],'$'])
+		assert.deepEqual(Conc('[ potato | banana]$', { errors }), [["Option",["Disjunction",[["Exception",[["Positive",["Concatenation",[["NT","potato"]]]],["Negative",null]]],["Exception",[["Positive",["Concatenation",[["NT","banana"]]]],["Negative",null]]]]]],"$"])
 		assert.deepEqual(errors, [])
 	})
 	it('tests Conc negative ([])', () => {
@@ -111,7 +112,7 @@ describe('rules', () => {
 	})
 	it('tests Conc positive ({})', () => {
 		const errors = []
-		assert.deepEqual(Conc('{ potato}$', { errors }), [['Repetition', ["Disjunction",[["Exception",["Concatenation",[["NT","potato"]]]]]]], '$'])
+		assert.deepEqual(Conc('{ potato}$', { errors }), [['Repetition',['Disjunction',[['Exception',[['Positive',['Concatenation',[['NT','potato']]]],['Negative',null]]]]]],'$'])
 		assert.deepEqual(errors, [])
 	})
 	it('tests Conc negative ({})', () => {
@@ -119,21 +120,21 @@ describe('rules', () => {
 		assert.deepEqual(Conc('{ potato$', { errors }), [['Expression', null], '{ potato$'])
 		assert.deepEqual(errors, ["✘ 1:0 | Expected '}', got '$...'"])
 	})
-	// // it('tests Conc positive (??)', () => {
-	// // 	const errors = []
-	// // 	assert.deepEqual(Conc('? potato?$', { errors, special: LITERAL(' potato') }), [['?', ' potato', '?', []], '$'])
-	// // 	assert.deepEqual(errors, [])
-	// // })
+	// it('tests Conc positive (??)', () => {
+	// 	const errors = []
+	// 	assert.deepEqual(Conc('? potato?$', { errors, special: LITERAL(' potato') }), [['?', ' potato', '?', []], '$'])
+	// 	assert.deepEqual(errors, [])
+	// })
 	// it('tests Conc negative (?? - fail inner rule)', () => {
 	// 	const errors = []
 	// 	assert.deepEqual(Conc('? potato?$', { errors, special: LITERAL(' protato') }), [['Conc', null], '? potato?$'])
 	// 	assert.deepEqual(errors, ["✘ 1:0 | Expected 'special rule', got ' potato?$...'"])
 	// })
-	// // it('tests Conc negative (?? - fail presence of ?)', () => {
-	// // 	const errors = []
-	// // 	assert.deepEqual(Conc('? potato$', { errors, special: LITERAL(' potato') }), [null, '? potato$'])
-	// // 	assert.deepEqual(errors, ["✘ 1:0 | Expected '?', got '$...'"])
-	// // })
+	// it('tests Conc negative (?? - fail presence of ?)', () => {
+	// 	const errors = []
+	// 	assert.deepEqual(Conc('? potato$', { errors, special: LITERAL(' potato') }), [null, '? potato$'])
+	// 	assert.deepEqual(errors, ["✘ 1:0 | Expected '?', got '$...'"])
+	// })
 	it('tests Conc negative', () => {
 		const errors = []
 		assert.deepEqual(Conc('12  *$', { errors }), [['Expression', null], '12  *$'])
@@ -151,27 +152,27 @@ describe('rules', () => {
 	})
 	it('tests Disj positive (no except)', () => {
 		const errors = []
-		assert.deepEqual(Disj('ab c d$', { errors }), [['Exception', ['Concatenation', [['NT', 'ab'], ['NT', 'c'], ['NT', 'd']]], null], '$'])
+		assert.deepEqual(Disj('ab c d$', { errors }), [['Exception',[['Positive',['Concatenation',[['NT','ab'],['NT','c'],['NT','d']]]],['Negative',null]]],'$'])
 		assert.deepEqual(errors, [])
 	})
 	it('tests Disj positive (with except)', () => {
 		const errors = []
-		assert.deepEqual(Disj('ab c - potato$', { errors }), [['Exception', ['Concatenation', [['NT', 'ab'], ['NT', 'c']]], ['Concatenation', [['NT', 'potato']]]], '$'])
+		assert.deepEqual(Disj('ab c - potato$', { errors }), [['Exception',[['Positive',['Concatenation',[['NT','ab'],['NT','c']]]],['Negative',['Concatenation',[['NT','potato']]]]]],'$'])
 		assert.deepEqual(errors, [])
 	})
 	it('tests Disj negative', () => {
 		const errors = []
-		assert.deepEqual(Disj('12ab c$', { errors }), [['Exception', null, null], '12ab c$'])
+		assert.deepEqual(Disj('12ab c$', { errors }), [['Exception', null], '12ab c$'])
 		assert.deepEqual(errors, ["✘ 1:0 | Expected '*', got 'ab c$...'"])
 	})
 	it('tests Exp positive (simple)', () => {
 		const errors = []
-		assert.deepEqual(Exp('ab c$', { errors }), [['Disjunction', [['Exception', ['Concatenation', [['NT', 'ab'], ['NT', 'c']]]]]], '$'])
+		assert.deepEqual(Exp('ab c$', { errors }), [['Disjunction',[['Exception',[['Positive',['Concatenation',[['NT','ab'],['NT','c']]]],['Negative',null]]]]],'$'])
 		assert.deepEqual(errors, [])
 	})
 	it('tests Exp positive (many)', () => {
 		const errors = []
-		assert.deepEqual(Exp('ab c | potato | banana$', { errors }), [['Disjunction', [['Exception', ['Concatenation', [['NT', 'ab'], ['NT', 'c']]]], ['Exception', ['Concatenation', [['NT', 'potato']]]], ['Exception', ['Concatenation', [['NT', 'banana']]]]]], '$'])
+		assert.deepEqual(Exp('ab c | potato | banana$', { errors }), [['Disjunction', [['Exception', [['Positive', ['Concatenation', [['NT', 'ab'], ['NT', 'c']]]], ['Negative', null]]], ['Exception', [['Positive', ['Concatenation', [['NT', 'potato']]]], ['Negative', null]]], ['Exception', [['Positive', ['Concatenation', [['NT', 'banana']]]], ['Negative', null]]]]], '$'])
 		assert.deepEqual(errors, [])
 	})
 	it('tests Exp negative', () => {
@@ -182,13 +183,35 @@ describe('rules', () => {
 	it('tests Rule positive', () => {
 		const original = 'S = ab | c;'
 		const errors = []
-		assert.deepEqual(Rule(original, { original, errors }), [['Rule',['NT','S'],['Disjunction',[['Exception',['Concatenation',[['NT','ab']]]],['Exception',['Concatenation',[['NT','c']]]]]]],''])
+		assert.deepEqual(Rule(original, { original, errors }), [['Rule',[['Head', ['NT','S']],['Body', ['Disjunction',[['Exception',[['Positive', ['Concatenation',[['NT','ab']]]], ['Negative', null]]],['Exception',[['Positive', ['Concatenation',[['NT','c']]]], ['Negative', null]]]]]]]],''])
 		assert.deepEqual(errors, [])
 	})
 	it('tests Rule negative (missing ";")', () => {
 		const original = 'S = ab | c'
 		const errors = []
-		assert.deepEqual(Rule(original, { original, errors }), [['Rule', null, null], 'S = ab | c'])
+		assert.deepEqual(Rule(original, { original, errors }), [['Rule', null], 'S = ab | c'])
 		assert.deepEqual(errors, ["✘ 1:10 | Expected ';', got end of input"])
+	})
+	it('tests EBNF positive', () => {
+		const original = 'S = "ab" A | S "c"; A = "b" | /[0-9]+/ S;'
+		const errors = []
+		assert.deepEqual(EBNF(original, { original, errors }), [["EBNF",[["Rule",[["Head",["NT","S"]],["Body",["Disjunction",[["Exception",[["Positive",["Concatenation",[["DblQuote","ab"],["NT","A"]]]],["Negative",null]]],["Exception",[["Positive",["Concatenation",[["NT","S"],["DblQuote","c"]]]],["Negative",null]]]]]]]],["Rule",[["Head",["NT","A"]],["Body",["Disjunction",[["Exception",[["Positive",["Concatenation",[["DblQuote","b"]]]],["Negative",null]]],["Exception",[["Positive",["Concatenation",[["Regex","[0-9]+"],["NT","S"]]]],["Negative",null]]]]]]]]]],""])
+		assert.deepEqual(errors, [])
+	})
+	it('tests EBNF negative (missing ";")', () => {
+		const original = 'S ; "ab" A | S "c"; A = "b" | /[0-9]+/ S'
+		const errors = []
+		assert.deepEqual(EBNF(original, { original, errors }), [['EBNF', []], 'S ; "ab" A | S "c"; A = "b" | /[0-9]+/ S'])
+		assert.deepEqual(errors, ["✘ 1:2 | Expected '=', got '; \"ab\" A | S \"c\"; A ...'"])
+	})
+	it('tests EBNF negative (wrong rule "=")', () => {
+		const original = `S =
+	"ab" A
+	|| S "c";
+A == "b"
+	| /[0-9]+/ S;`
+		const errors = []
+		assert.deepEqual(EBNF(original, { original, errors }), [['EBNF', []], 'S =\n\t"ab" A\n\t|| S "c";\nA == "b"\n\t| /[0-9]+/ S;'])
+		assert.deepEqual(errors, ["✘ 3:2 | Expected 'Expression after \"|\"', got '| S \"c\";\\nA == \"b\"\\n\t|...'", "✘ 3:1 | Expected ';', got '|| S \"c\";\\nA == \"b\"\\n\t...'"])
 	})
 })
