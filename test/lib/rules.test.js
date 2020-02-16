@@ -50,14 +50,19 @@ describe('rules', () => {
 	})
 	it('tests Conc positive (repetition)', () => {
 		const errors = []
-		const expected = [['Multiplication',['12','s']],'$']
+		const expected = [['Repetition',['12','s']],'$']
 		assert.deepEqual(Conc('12  *s$', { errors }), expected)
 		assert.deepEqual(errors, [])
 	})
-	it('tests Conc negative (repetition)', () => {
+	it('tests Conc negative (repetition), on *', () => {
 		const errors = []
 		assert.deepEqual(Conc('12  s*2$', { errors }), [['Expression', null], '12  s*2$'])
 		assert.deepEqual(errors, ["✘ 1:0 | Expected '*', got 's*2$...'"])
+	})
+	it('tests Conc negative (repetition), on NT', () => {
+		const errors = []
+		assert.deepEqual(Conc('12 *', { errors }), [['Expression', null], '12 *'])
+		assert.deepEqual(errors, ["✘ 1:0 | Expected 'Non terminal', got end of input"])
 	})
 	it('tests Conc positive (NT)', () => {
 		const errors = []
@@ -112,13 +117,23 @@ describe('rules', () => {
 	})
 	it('tests Conc positive ({})', () => {
 		const errors = []
-		assert.deepEqual(Conc('{ potato}$', { errors }), [['Repetition',['Disjunction',[['Exception',[['Positive',['Concatenation',[['NT','potato']]]],['Negative',null]]]]]],'$'])
+		assert.deepEqual(Conc('{ potato}$', { errors }), [['Closure',['Disjunction',[['Exception',[['Positive',['Concatenation',[['NT','potato']]]],['Negative',null]]]]]],'$'])
 		assert.deepEqual(errors, [])
 	})
 	it('tests Conc negative ({})', () => {
 		const errors = []
 		assert.deepEqual(Conc('{ potato$', { errors }), [['Expression', null], '{ potato$'])
 		assert.deepEqual(errors, ["✘ 1:0 | Expected '}', got '$...'"])
+	})
+	it('tests Conc positive (())', () => {
+		const errors = []
+		assert.deepEqual(Conc('( potato)$', { errors }), [['Group',['Disjunction',[['Exception',[['Positive',['Concatenation',[['NT','potato']]]],['Negative',null]]]]]],'$'])
+		assert.deepEqual(errors, [])
+	})
+	it('tests Conc negative (())', () => {
+		const errors = []
+		assert.deepEqual(Conc('( potato$', { errors }), [['Expression', null], '( potato$'])
+		assert.deepEqual(errors, ["✘ 1:0 | Expected ')', got '$...'"])
 	})
 	// it('tests Conc positive (??)', () => {
 	// 	const errors = []
@@ -137,7 +152,7 @@ describe('rules', () => {
 	// })
 	it('tests Conc negative', () => {
 		const errors = []
-		assert.deepEqual(Conc('12  *$', { errors }), [['Expression', null], '12  *$'])
+		assert.deepEqual(Conc('!$', { errors }), [['Expression', null], '!$'])
 		assert.deepEqual(errors, [])
 	})
 	it('tests Xcep positive', () => {
@@ -183,7 +198,7 @@ describe('rules', () => {
 	it('tests Rule positive', () => {
 		const original = 'S = ab | c;'
 		const errors = []
-		assert.deepEqual(Rule(original, { original, errors }), [['Rule',[['Head', ['NT','S']],['Body', ['Disjunction',[['Exception',[['Positive', ['Concatenation',[['NT','ab']]]], ['Negative', null]]],['Exception',[['Positive', ['Concatenation',[['NT','c']]]], ['Negative', null]]]]]]]],''])
+		assert.deepEqual(Rule(original, { original, errors }), [['Rule',[['Head', 'S'],['Body', ['Disjunction',[['Exception',[['Positive', ['Concatenation',[['NT','ab']]]], ['Negative', null]]],['Exception',[['Positive', ['Concatenation',[['NT','c']]]], ['Negative', null]]]]]]]],''])
 		assert.deepEqual(errors, [])
 	})
 	it('tests Rule negative (missing ";")', () => {
@@ -195,7 +210,7 @@ describe('rules', () => {
 	it('tests EBNF positive', () => {
 		const original = 'S = "ab" A | S "c"; A = "b" | /[0-9]+/ S;'
 		const errors = []
-		assert.deepEqual(EBNF(original, { original, errors }), [["EBNF",[["Rule",[["Head",["NT","S"]],["Body",["Disjunction",[["Exception",[["Positive",["Concatenation",[["DblQuote","ab"],["NT","A"]]]],["Negative",null]]],["Exception",[["Positive",["Concatenation",[["NT","S"],["DblQuote","c"]]]],["Negative",null]]]]]]]],["Rule",[["Head",["NT","A"]],["Body",["Disjunction",[["Exception",[["Positive",["Concatenation",[["DblQuote","b"]]]],["Negative",null]]],["Exception",[["Positive",["Concatenation",[["Regex","[0-9]+"],["NT","S"]]]],["Negative",null]]]]]]]]]],""])
+		assert.deepEqual(EBNF(original, { original, errors }), [["EBNF",[["Rule",[["Head","S"],["Body",["Disjunction",[["Exception",[["Positive",["Concatenation",[["DblQuote","ab"],["NT","A"]]]],["Negative",null]]],["Exception",[["Positive",["Concatenation",[["NT","S"],["DblQuote","c"]]]],["Negative",null]]]]]]]],["Rule",[["Head","A"],["Body",["Disjunction",[["Exception",[["Positive",["Concatenation",[["DblQuote","b"]]]],["Negative",null]]],["Exception",[["Positive",["Concatenation",[["Regex","[0-9]+"],["NT","S"]]]],["Negative",null]]]]]]]]]],""])
 		assert.deepEqual(errors, [])
 	})
 	it('tests EBNF negative (missing ";")', () => {
