@@ -16,12 +16,12 @@ describe('rules', () => {
   describe('WS', () => {
     it('tests WS positive', () => {
       const errors = []
-      assert.deepEqual(WS(' is a text', { errors }), [['WS', true], 'is a text'])
+      assert.deepEqual(WS(' is a text', { errors }), [[WS.type], 'is a text'])
       assert.deepEqual(errors, [])
     })
     it('tests WS positive (when comment)', () => {
       const errors = []
-      assert.deepEqual(WS('(* comment *)is a text', { errors }), [['WS', true], 'is a text'])
+      assert.deepEqual(WS('(* comment *)is a text', { errors }), [[WS.type], 'is a text'])
       assert.deepEqual(errors, [])
     })
     it('tests WS negative', () => {
@@ -34,12 +34,12 @@ describe('rules', () => {
   describe('WSs', () => {
     it('tests WSs positive', () => {
       const errors = []
-      assert.deepEqual(WSs('    is a text', { errors }), [['WSs', true], 'is a text'])
+      assert.deepEqual(WSs('    is a text', { errors }), [[WSs.type], 'is a text'])
       assert.deepEqual(errors, [])
     })
     it('tests WSs negative', () => {
       const errors = []
-      assert.deepEqual(WSs('this is a text', { errors }), [['WSs', true], 'this is a text'])
+      assert.deepEqual(WSs('this is a text', { errors }), [[WSs.type], 'this is a text'])
       assert.deepEqual(errors, [])
     })
   })
@@ -47,7 +47,7 @@ describe('rules', () => {
   describe('NT', () => {
     it('tests NT positive', () => {
       const errors = []
-      assert.deepEqual(NT('this is a text', { errors }), [['NT', 'this'], 'is a text'])
+      assert.deepEqual(NT('this is a text', { errors }), [[NT.type, 'this'], 'is a text'])
       assert.deepEqual(errors, [])
     })
     it('tests NT negative', () => {
@@ -60,8 +60,7 @@ describe('rules', () => {
   describe('Conc', () => {
     it('tests Conc positive (repetition)', () => {
       const errors = []
-      const expected = [['Repetition',['12','s']],'$']
-      assert.deepEqual(Conc('12  *s$', { errors }), expected)
+      assert.deepEqual(Conc('12  *s$', { errors }), [[Conc.type.Repetition,'12','s'],'$'])
       assert.deepEqual(errors, [])
     })
     it('tests Conc negative (repetition), on *', () => {
@@ -76,12 +75,12 @@ describe('rules', () => {
     })
     it('tests Conc positive (NT)', () => {
       const errors = []
-      assert.deepEqual(Conc('potato  *s$', { errors }), [['NT', 'potato'], '*s$'])
+      assert.deepEqual(Conc('potato  *s$', { errors }), [[NT.type, 'potato'], '*s$'])
       assert.deepEqual(errors, [])
     })
     it('tests Conc positive (double quotes)', () => {
       const errors = []
-      const expected = [['DblQuote', 'quotations'],'$']
+      const expected = [[Conc.type.DblQuote, 'quotations'],'$']
       assert.deepEqual(Conc('"quotations" $', { errors }), expected)
       assert.deepEqual(errors, [])
     })
@@ -92,7 +91,7 @@ describe('rules', () => {
     })
     it('tests Conc positive (single quotes)', () => {
       const errors = []
-      assert.deepEqual(Conc("'quotations' $", { errors }), [['SglQuote', 'quotations'], '$'])
+      assert.deepEqual(Conc("'quotations' $", { errors }), [[Conc.type.SglQuote, 'quotations'], '$'])
       assert.deepEqual(errors, [])
     })
     it('tests Conc negative (single quotes)', () => {
@@ -102,7 +101,7 @@ describe('rules', () => {
     })
     it('tests Conc positive (regex)', () => {
       const errors = []
-      assert.deepEqual(Conc('/[]/ $', { errors }), [['Regex', '[]'], '$'])
+      assert.deepEqual(Conc('/[]/ $', { errors }), [[Conc.type.Regex, '[]'], '$'])
       assert.deepEqual(errors, [])
     })
     it('tests Conc negative (regex)', () => {
@@ -112,12 +111,17 @@ describe('rules', () => {
     })
     it('tests Conc positive ([])', () => {
       const errors = []
-      assert.deepEqual(Conc('[ potato]$', { errors }), [['Option',[['Exception',[['Concatenation',[['NT','potato']]],null]]]],'$'])
+      assert.deepEqual(Conc('[ potato]$', { errors }), [[Conc.type.Option,[Exp.type, [Disj.type,[Xcep.type,[NT.type,'potato']]]]],'$'])
+      assert.deepEqual(errors, [])
+    })
+    it('tests Conc positive ([]) medium', () => {
+      const errors = []
+      assert.deepEqual(Conc('[ potato | banana]$', { errors }), [[Conc.type.Option,[Exp.type, [Disj.type,[Xcep.type,[NT.type,"potato"]]],[Disj.type,[Xcep.type,[NT.type,"banana"]]]]],"$"])
       assert.deepEqual(errors, [])
     })
     it('tests Conc positive ([]) long', () => {
       const errors = []
-      assert.deepEqual(Conc('[ potato | banana]$', { errors }), [["Option",[["Exception",[["Concatenation",[["NT","potato"]]],null]],["Exception",[["Concatenation",[["NT","banana"]]],null]]]],"$"])
+      assert.deepEqual(Conc('[ potato | banana | pineaple]$', { errors }), [[Conc.type.Option,[Exp.type, [Disj.type,[Xcep.type,[NT.type,"potato"]]],[Disj.type,[Xcep.type,[NT.type,"banana"]]], [Disj.type,[Xcep.type,[NT.type,"pineaple"]]]]],"$"])
       assert.deepEqual(errors, [])
     })
     it('tests Conc negative ([])', () => {
@@ -127,7 +131,7 @@ describe('rules', () => {
     })
     it('tests Conc positive ({})', () => {
       const errors = []
-      assert.deepEqual(Conc('{ potato}$', { errors }), [['Closure',[['Exception',[['Concatenation',[['NT','potato']]],null]]]],'$'])
+      assert.deepEqual(Conc('{ potato}$', { errors }), [[Conc.type.Closure,[Exp.type, [Disj.type,[Xcep.type,[NT.type,'potato']]]]],'$'])
       assert.deepEqual(errors, [])
     })
     it('tests Conc negative ({})', () => {
@@ -137,7 +141,7 @@ describe('rules', () => {
     })
     it('tests Conc positive (())', () => {
       const errors = []
-      assert.deepEqual(Conc('( potato)$', { errors }), [['Group',[['Exception',[['Concatenation',[['NT','potato']]],null]]]],'$'])
+      assert.deepEqual(Conc('( potato)$', { errors }), [[Conc.type.Group,[Exp.type, [Disj.type,[Xcep.type,[NT.type,'potato']]]]],'$'])
       assert.deepEqual(errors, [])
     })
     it('tests Conc negative (())', () => {
@@ -145,31 +149,31 @@ describe('rules', () => {
       assert.deepEqual(Conc('( potato$', { errors }), [[null], '( potato$'])
       assert.deepEqual(errors, ["✘ 1:0 | Expected ')', got '$...'"])
     })
-//   // it('tests Conc positive (??)', () => {
-//   //  const errors = []
-//   //  assert.deepEqual(Conc('? potato?$', { errors, special: LITERAL(' potato') }), [['?', ' potato', '?', []], '$'])
-//   //  assert.deepEqual(errors, [])
-//   // })
-//   // it('tests Conc negative (?? - fail inner rule)', () => {
-//   //  const errors = []
-//   //  assert.deepEqual(Conc('? potato?$', { errors, special: LITERAL(' protato') }), [['Conc', null], '? potato?$'])
-//   //  assert.deepEqual(errors, ["✘ 1:0 | Expected 'special rule', got ' potato?$...'"])
-//   // })
-//   // it('tests Conc negative (?? - fail presence of ?)', () => {
-//   //  const errors = []
-//   //  assert.deepEqual(Conc('? potato$', { errors, special: LITERAL(' potato') }), [null, '? potato$'])
-//   //  assert.deepEqual(errors, ["✘ 1:0 | Expected '?', got '$...'"])
-//   // })
+// //   // it('tests Conc positive (??)', () => {
+// //   //  const errors = []
+// //   //  assert.deepEqual(Conc('? potato?$', { errors, special: LITERAL(' potato') }), [['?', ' potato', '?', []], '$'])
+// //   //  assert.deepEqual(errors, [])
+// //   // })
+// //   // it('tests Conc negative (?? - fail inner rule)', () => {
+// //   //  const errors = []
+// //   //  assert.deepEqual(Conc('? potato?$', { errors, special: LITERAL(' protato') }), [['Conc', null], '? potato?$'])
+// //   //  assert.deepEqual(errors, ["✘ 1:0 | Expected 'special rule', got ' potato?$...'"])
+// //   // })
+// //   // it('tests Conc negative (?? - fail presence of ?)', () => {
+// //   //  const errors = []
+// //   //  assert.deepEqual(Conc('? potato$', { errors, special: LITERAL(' potato') }), [null, '? potato$'])
+// //   //  assert.deepEqual(errors, ["✘ 1:0 | Expected '?', got '$...'"])
+// //   // })
     it('tests Conc negative', () => {
       const errors = []
       assert.deepEqual(Conc('!$', { errors }), [[null], '!$'])
       assert.deepEqual(errors, [])
     })
   })
-  describe('WS', () => {
+  describe('Xcep', () => {
     it('tests Xcep positive', () => {
       const errors = []
-      assert.deepEqual(Xcep('ab c d$', { errors }), [['Concatenation', [['NT', 'ab'], ['NT', 'c'], ['NT', 'd']]], '$'])
+      assert.deepEqual(Xcep('ab c d$', { errors }), [[Xcep.type, [NT.type, 'ab'], [NT.type, 'c'], [NT.type, 'd']], '$'])
       assert.deepEqual(errors, [])
     })
     it('tests Xcep negative', () => {
@@ -181,12 +185,12 @@ describe('rules', () => {
   describe('Disj', () => {
     it('tests Disj positive (no except)', () => {
       const errors = []
-      assert.deepEqual(Disj('ab c d$', { errors }), [['Exception',[['Concatenation',[['NT','ab'],['NT','c'],['NT','d']]],null]],'$'])
+      assert.deepEqual(Disj('ab c d$', { errors }), [[Disj.type,[Xcep.type,[NT.type,'ab'],[NT.type,'c'],[NT.type,'d']]],'$'])
       assert.deepEqual(errors, [])
     })
     it('tests Disj positive (with except)', () => {
       const errors = []
-      assert.deepEqual(Disj('ab c - potato$', { errors }), [['Exception',[['Concatenation',[['NT','ab'],['NT','c']]],['Concatenation',[['NT','potato']]]]],'$'])
+      assert.deepEqual(Disj('ab c - potato$', { errors }), [[Disj.type,[Xcep.type,[NT.type,'ab'],[NT.type,'c']],[Xcep.type,[NT.type,'potato']]],'$'])
       assert.deepEqual(errors, [])
     })
     it('tests Disj negative', () => {
@@ -198,17 +202,17 @@ describe('rules', () => {
   describe('Exp', () => {
     it('tests Exp positive (simple)', () => {
       const errors = []
-      assert.deepEqual(Exp('ab c$', { errors }), [['Disjunction',[['Exception',[['Concatenation',[['NT','ab'],['NT','c']]],null]]]],'$'])
+      assert.deepEqual(Exp('ab c$', { errors }), [[Exp.type,[Disj.type,[Xcep.type,[NT.type,'ab'],[NT.type,'c']]]],'$'])
       assert.deepEqual(errors, [])
     })
     it('tests Exp positive (many)', () => {
       const errors = []
-      assert.deepEqual(Exp('ab c | potato | banana$', { errors }), [['Disjunction', [['Exception', [['Concatenation', [['NT', 'ab'], ['NT', 'c']]], null]], ['Exception', [['Concatenation', [['NT', 'potato']]], null]], ['Exception', [['Concatenation', [['NT', 'banana']]], null]]]], '$'])
+      assert.deepEqual(Exp('ab c | potato | banana$', { errors }), [[Exp.type, [Disj.type, [Xcep.type, [NT.type, 'ab'], [NT.type, 'c']]], [Disj.type, [Xcep.type, [NT.type, 'potato']]], [Disj.type, [Xcep.type, [NT.type, 'banana']]]], '$'])
       assert.deepEqual(errors, [])
     })
     it('tests Exp negative', () => {
       const errors = []
-      assert.deepEqual(Exp('12ab c$', { errors }), [['Disjunction', null], '12ab c$'])
+      assert.deepEqual(Exp('12ab c$', { errors }), [[Exp.type, null], '12ab c$'])
       assert.deepEqual(errors, ["✘ 1:0 | Expected '*', got 'ab c$...'"])
     })
   })
@@ -216,13 +220,13 @@ describe('rules', () => {
     it('tests Rule positive', () => {
       const original = 'S = ab | c;'
       const errors = []
-      assert.deepEqual(Rule(original, { original, errors }), [['Rule',[['Head', 'S'],['Body', ['Disjunction',[['Exception',[['Concatenation',[['NT','ab']]], null]],['Exception',[['Concatenation',[['NT','c']]], null]]]]]]],''])
+      assert.deepEqual(Rule(original, { original, errors }), [[Rule.type,'S',[Exp.type,[Disj.type,[Xcep.type,[NT.type,'ab']]],[Disj.type,[Xcep.type,[NT.type,'c']]]]],''])
       assert.deepEqual(errors, [])
     })
     it('tests Rule negative (missing ";")', () => {
       const original = 'S = ab | c'
       const errors = []
-      assert.deepEqual(Rule(original, { original, errors }), [['Rule', null], 'S = ab | c'])
+      assert.deepEqual(Rule(original, { original, errors }), [[null], 'S = ab | c'])
       assert.deepEqual(errors, ["✘ 1:10 | Expected ';', got end of input"])
     })
   })
@@ -230,13 +234,13 @@ describe('rules', () => {
     it('tests EBNF positive', () => {
       const original = 'S = "ab" A | S "c"; A = "b" | /[0-9]+/ S;'
       const errors = []
-      assert.deepEqual(EBNF(original, { original, errors }), [["EBNF",[["Rule",[["Head","S"],["Body",["Disjunction",[["Exception",[["Concatenation",[["DblQuote","ab"],["NT","A"]]],null]],["Exception",[["Concatenation",[["NT","S"],["DblQuote","c"]]],null]]]]]]],["Rule",[["Head","A"],["Body",["Disjunction",[["Exception",[["Concatenation",[["DblQuote","b"]]],null]],["Exception",[["Concatenation",[["Regex","[0-9]+"],["NT","S"]]],null]]]]]]]]],""])
+      assert.deepEqual(EBNF(original, { original, errors }), [["$EBNF",["$Rule","S",["$Exp",["$Disj",["$Xcep",["$DblQuote","ab"],["$NT","A"]]],["$Disj",["$Xcep",["$NT","S"],["$DblQuote","c"]]]]],["$Rule","A",["$Exp",["$Disj",["$Xcep",["$DblQuote","b"]]],["$Disj",["$Xcep",["$Regex","[0-9]+"],["$NT","S"]]]]]],""])
       assert.deepEqual(errors, [])
     })
     it('tests EBNF negative (missing ";")', () => {
       const original = 'S ; "ab" A | S "c"; A = "b" | /[0-9]+/ S'
       const errors = []
-      assert.deepEqual(EBNF(original, { original, errors }), [['EBNF', []], 'S ; "ab" A | S "c"; A = "b" | /[0-9]+/ S'])
+      assert.deepEqual(EBNF(original, { original, errors }), [[EBNF.type], 'S ; "ab" A | S "c"; A = "b" | /[0-9]+/ S'])
       assert.deepEqual(errors, ["✘ 1:2 | Expected '=', got '; \"ab\" A | S \"c\"; A ...'"])
     })
     it('tests EBNF negative (wrong rule "=")', () => {
@@ -246,7 +250,7 @@ describe('rules', () => {
   A == "b"
     | /[0-9]+/ S;`
       const errors = []
-      assert.deepEqual(EBNF(original, { original, errors }), [['EBNF', []], 'S =\n    "ab" A\n    || S "c";\n  A == "b"\n    | /[0-9]+/ S;'])
+      assert.deepEqual(EBNF(original, { original, errors }), [[EBNF.type], 'S =\n    "ab" A\n    || S "c";\n  A == "b"\n    | /[0-9]+/ S;'])
       assert.deepEqual(errors, ["✘ 3:5 | Expected 'Expression after \"|\"', got '| S \"c\";\\n  A == \"b\"\\n...'", "✘ 3:4 | Expected ';', got '|| S \"c\";\\n  A == \"b\"...'"])
     })
   })
