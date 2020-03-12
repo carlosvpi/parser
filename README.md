@@ -1,5 +1,5 @@
 # pasre
-Parsing utility
+A ~7kB Parsing utility
 
 ## Install
 
@@ -22,7 +22,11 @@ import { pasre } from 'pasre'
 ### Use the parser
 
 ```javascript
-const parser = pasre(`S = 's' A | '0'; A = 'a' S`)
+const grammar = `
+  S = 's' A | '0';
+  A = 'a' S;
+`
+const parser = pasre(grammar)
 
 ```
 
@@ -41,6 +45,9 @@ parser[head](input)
 
 parses the `input` using the given grammar, using the `head` as an axiom. The output of `parser[head](input)` is a parsed tree.
 
+### The grammar
+
+The `parser` function from `pasre` takes a string that represents an EBNF grammar.
 
 ## Traverse a parsed tree
 
@@ -61,7 +68,7 @@ The `getTraverser` function takes a hash that defines how to aggregate the child
 For example, if `S = 's' A | '0'; A = 'a' S` is a grammar, and `tree` has been defined as
 
 ```javascript
-const tree = pasre(`S = 's' A | '0'; A = 'a' S`).S('sasasa0')
+const tree = pasre(grammar).S('sasasa0')
 ```
 
 then
@@ -85,10 +92,10 @@ traverser(tree) === 7
 
 The aggregator function takes one parameter that is an array. Each item of the array is the value given to the corresponding child of the node. In particular, the item is the result of aggregating the child node.
 
-### Example
+#### Example
 
 ```javascript
-const tree = pasre(`S = 's' A | '0'; A = 'a' S`).S('sasasa0')
+const tree = pasre(grammar).S('sasasa0')
 const traverser = getTraverser({
   S: ([s, A]) => {
   	console.log('S', s, A)
@@ -112,3 +119,26 @@ S s 2
 A a 3
 S s 6
 ```
+
+### Undefined aggregators
+
+If the `{head: aggregator}` hash does not include the `head` of certain rule `R`, then the array parameter of each aggregator function does not include the item corresponding to rule `R`.
+
+#### Example
+
+We include an extra *whitespace* rule. Since we do not define an aggregator for it, the other rules do not need to include the value it would yield.
+
+```javascript
+const grammar = `
+  S = 's' W A | '0' W;
+  A = 'a' W S;
+  W = /[ \t\n]/;
+`
+const tree = pasre(grammar).S('sa  s asa 0')
+const value = getTraverser({
+  S: ([s, A]) => s === '0' ? 0 : 1 + A,
+  A: ([a, S]) => 2 * S
+})(tree)
+```
+
+Then `value = 7`. The functions for `S` and `A` don't need to worry for the presence of `W` in the body of their rules.
