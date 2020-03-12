@@ -7,40 +7,108 @@ Parsing utility
 
 ```yarn add pasre```
 
-## Import
+## Parse a string
+
+### Import the parser
 
 ```javascript
-const pasre = require('pasre')
+const { pasre } = require('pasre')
 ```
 
 ```javascript
-import pasre from 'pasre'
+import { pasre } from 'pasre'
 ```
 
-## Parse a grammar
+### Use the parser
 
 ```javascript
 const parser = pasre(`S = 's' A | '0'; A = 'a' S`)
-const tree = parser('sasasa0')
+
 ```
 
-## Traverse a syntactic tree
+`parser` is a hash. Each rule head of the grammar is a key in the hash. In this case,
 
 ```javascript
-const result = traverse({
-  S: (value1, value2) => (console.log('S', value1, value2), value2 ? 1 + 2 * value2 : 0),
-  A: (value1, value2) => (console.log('A', value1, value2), 1 + value2)
-})(tree)
-console.log('result', result)
+typeof parser.S === 'function'
+typeof parser.A === 'function'
 ```
 
+If the string `head` is the head of a rule, and `input` is some string, then
+
+```javascript
+parser[head](input)
 ```
-S '0' undefined
-A 'a' 0
-S 's' 1
-A 'a' 3
-S 's' 4
-A 'a' 9
-S 's' 10
-result 21
+
+parses the `input` using the given grammar, using the `head` as an axiom. The output of `parser[head](input)` is a parsed tree.
+
+
+## Traverse a parsed tree
+
+### Import the traverser
+
+```javascript
+const { getTraverser } = require('pasre')
+```
+
+```javascript
+import { getTraverser } from 'pasre'
+```
+
+### Use the traverser
+
+The `getTraverser` function takes a hash that defines how to aggregate the children of a given node. A node in the tree is the result of parsing a rule; its root is the `head` of the rule, and its children is the parsed body.
+
+For example, if `S = 's' A | '0'; A = 'a' S` is a grammar, and `tree` has been defined as
+
+```javascript
+const tree = pasre(`S = 's' A | '0'; A = 'a' S`).S('sasasa0')
+```
+
+then
+
+```javascript
+const traverser = getTraverser({
+  S: ([s, A]) => s === '0' ? 0 : 1 + A,
+  A: ([a, S]) => 2 * S
+})
+```
+
+returns a function that takes a parsed tree and traverses it, aggregating the values of all the nodes.
+
+```javascript
+traverser(tree) === 7
+```
+
+### Traversing hash functions
+
+`getTraverser` takes a hash `{head: aggregator}`, where `head` is a rule head, and `aggregator` is a function that determines how to aggregate the body of a node with that head.
+
+The aggregator function takes one parameter that is an array. Each item of the array is the value given to the corresponding child of the node. In particular, the item is the result of aggregating the child node.
+
+### Example
+
+```javascript
+const tree = pasre(`S = 's' A | '0'; A = 'a' S`).S('sasasa0')
+const traverser = getTraverser({
+  S: ([s, A]) => {
+  	console.log('S', s, A)
+  	return s === '0' ? 0 : 1 + A
+  },
+  A: ([a, S]) => {
+  	console.log('A', a, S)
+  	return 2 * S
+  }
+})(tree)
+```
+
+Produces this output
+
+```
+S 0 undefined
+A a 0
+S s 0
+A a 1
+S s 2
+A a 3
+S s 6
 ```
