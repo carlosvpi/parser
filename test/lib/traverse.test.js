@@ -1,12 +1,11 @@
 const assert = require('assert')
 const { getTraverser } = require('../../lib/traverse')
 
-t = (r,...c) => [r,c]
-const v = getTraverser.valueType
+const v = getTraverser.valueTypes[0]
 
 describe('traverse', () => {
 	it('Traverses the tree with bubbling', () => {
-		const tree = t('+', t('*', t(v, 3), t('-', t(v,4), t(v,1))), t('/', t('+', t(v,5), t(v,3)), t(v,2)), t('-', t(v,11), t('*', t(v,1), t(v,2))))
+		const tree = ['+', ['*', [v, 3], ['-', [v,4], [v,1]]], ['/', ['+', [v,5], [v,3]], [v,2]], ['-', [v,11], ['*', [v,1], [v,2]]]]
 		const traverser = getTraverser({
 			'+': (...values) => values.reduce((acc, value) => acc + value, 0),
 			'-': (minuend, subtrahend) => minuend - subtrahend,
@@ -16,15 +15,15 @@ describe('traverse', () => {
 		assert.deepEqual(traverser(tree), 22)
 	})
 	it('Traverses the tree with bubbling and capturing', () => {
-		const tree = t('+', t('*', t(v, 3), t('-', t(v,4), t(v,1))), t('/', t('+', t(v,5), t(v,3)), t(v,2)), t('-', t(v,11), t('*', t(v,1), t(v,2))))
+		const tree = ['+', ['*', [v, 3], ['-', [v,4], [v,1]]], ['/', ['+', [v,5], [v,3]], [v,2]], ['-', [v,11], ['*', [v,1], [v,2]]]]
 		const traverser = getTraverser({
 			'+': (...values) => values.reduce((acc, value) => acc + value, 0),
 			'-': (minuend, subtrahend) => minuend - subtrahend,
 			'*': (...values) => values.reduce((acc, value) => acc * value, 1),
 			'/': (dividend, divisor) => dividend / divisor,
 		}, {
-			'/': (dividend, divisor) => [[dividend[0], [...dividend[1], t(v, 2)]], divisor]
+			'/': (dividend, divisor) => [['+', dividend, [v, 10]], divisor]
 		})
-		assert.deepEqual(traverser(tree), 23)
+		assert.deepEqual(traverser(tree), 27)
 	})
 })
