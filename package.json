@@ -1,21 +1,21 @@
 {
-  "name": "pasre",
+  "name": "@carlosvpi/parser",
   "version": "1.0.0",
-  "description": "",
+  "description": "Parsing utility",
   "main": "index.js",
   "scripts": {
     "test": "mocha"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/carlosvpi/pasre.git"
+    "url": "git+https://github.com/carlosvpi/parser.git"
   },
   "author": "Carlos Vazquez",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/carlosvpi/pasre/issues"
+    "url": "https://github.com/carlosvpi/parser/issues"
   },
-  "homepage": "https://github.com/carlosvpi/pasre#readme",
+  "homepage": "https://github.com/carlosvpi/parser#readme",
   "devDependencies": {
     "mocha": "^6.2.2"
   }

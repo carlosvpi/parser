@@ -1,22 +1,22 @@
-# pasre
-A ~7kB Parsing utility
+# @carlosvpi/parser
+A ~6kB Parsing utility
 
 ## Install
 
-```npm install pasre```
+```npm install @carlosvpi/parser```
 
-```yarn add pasre```
+```yarn add @carlosvpi/parser```
 
 ## Parse a string
 
 ### Import the parser
 
 ```javascript
-const pasre = require('pasre')
+const getParser = require('@carlosvpi/parser')
 ```
 
 ```javascript
-import pasre from 'pasre'
+import getParser from '@carlosvpi/parser'
 ```
 
 ### Use the parser
@@ -26,7 +26,7 @@ const grammar = `
   S = 's' A | '0';
   A = 'a' S;
 `
-const parser = pasre(grammar)
+const parser = getParser(grammar)
 
 ```
 
@@ -47,7 +47,7 @@ parses the `input` using the given grammar, using the `head` as an axiom. The ou
 
 ### The grammar
 
-The `parser` function from `pasre` takes a string that represents an EBNF grammar.
+The grammar that the `getParser` function (from `@carlosvpi/parser`) takes is a string that follows the same syntax described in the [Wikipedia page for EBNF](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form).
 
 ### The tree
 
@@ -70,7 +70,7 @@ This code
 parser(`
   S = 's' A | '0';
   A = 'a' S;
-`).S('sasasa0')
+`).S('sasa0')
 ```
 
 produces this tree:
@@ -114,27 +114,7 @@ produces this tree:
                               "$CONCAT",
                               [
                                  "$LITERAL",
-                                 "s"
-                              ],
-                              [
-                                 "A",
-                                 [
-                                    "$CONCAT",
-                                    [
-                                       "$LITERAL",
-                                       "a"
-                                    ],
-                                    [
-                                       "S",
-                                       [
-                                          "$CONCAT",
-                                          [
-                                             "$LITERAL",
-                                             "0"
-                                          ]
-                                       ]
-                                    ]
-                                 ]
+                                 "0"
                               ]
                            ]
                         ]
