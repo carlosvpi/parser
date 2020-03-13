@@ -1,5 +1,3 @@
 require('./lib/hoc.test')
 require('./lib/rules.test')
-require('./lib/traverse.test')
 require('./lib/parser.test')
-require('./lib/traverseParsed.test')

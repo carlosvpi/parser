@@ -1,4 +1,1 @@
-module.exports = {
-  pasre: require('./lib/parser'),
-  getTraverser: require('./lib/traverse')
-}
+module.exports = require('./lib/parser')
