@@ -49,18 +49,6 @@ parses the `input` using the given grammar, using the `head` as an axiom. The ou
 
 The `parser` function from `pasre` takes a string that represents an EBNF grammar.
 
-## Traverse a parsed tree
-
-### Import the traverser
-
-```javascript
-const { getTraverser } = require('pasre')
-```
-
-```javascript
-import { getTraverser } from 'pasre'
-```
-
 ### The tree
 
 The result of `parser[head](input)` is a tree where nodes have this shape:
