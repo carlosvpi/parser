@@ -2,7 +2,7 @@
   "name": "@carlosvpi/parser",
   "version": "1.0.1",
   "description": "Parsing utility",
-  "main": "parser.min.js",
+  "main": "index.js",
   "scripts": {
     "test": "mocha"
   },
