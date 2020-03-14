@@ -131,7 +131,7 @@ const {
   EXPECT
 } = require('./hoc')
 
-const parser = module.exports.parser = (grammar) => {
+const parser = module.exports = (grammar) => {
   const grammarErrors = []
   const parsedGrammar = EBNF(grammar, 0, grammarErrors)
   if (grammarErrors.length) {
@@ -216,10 +216,10 @@ const {
 } = require('./hoc')
 
 const WS = module.exports.WS = (input, index, errors) => {
-  const [[root], endIndex] = MATCH(/([\ \n\t]|\(\*.*\*\))/)(input, index, errors)
+  const [[root, node], endIndex] = MATCH(/([\ \n\t]|\(\*([^\*]|\*(?!\)))*\*\))/)(input, index, errors)
 
   return root
-    ? [[WS.type], endIndex]
+    ? [[WS.type, node], endIndex]
     : [[null], endIndex]
 }
 WS.type = `$WS`
@@ -252,19 +252,19 @@ const Conc = module.exports.Conc = (input, index, errors) => {
     ),
     CONCAT(
       LITERAL('"'),
-      MATCH(/[^\"]*/),
+      MATCH(/([^\\"]|\\.)*/),
       EXPECT(LITERAL('"'), '"'),
       WSs
     ),
     CONCAT(
       LITERAL("'"),
-      MATCH(/[^\']*/),
+      MATCH(/([^\\']|\\.)*/),
       EXPECT(LITERAL("'"), "'"),
       WSs
     ),
     CONCAT(
       LITERAL('/'),
-      MATCH(/[^\/]*/),
+      MATCH(/([^\\\/]|\\.)*/),
       EXPECT(LITERAL('/'), '/'),
       WSs
     ),
@@ -291,7 +291,7 @@ const Conc = module.exports.Conc = (input, index, errors) => {
     ),
     CONCAT(
       LITERAL('?'),
-      MATCH(/[^\?]*/),
+      MATCH(/([^\\\?]|\\\?)*/),
       EXPECT(LITERAL('?'), '?'),
       WSs
     )

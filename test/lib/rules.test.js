@@ -16,12 +16,17 @@ describe('rules', () => {
   describe('WS', () => {
     it('tests WS positive', () => {
       const errors = []
-      assert.deepEqual(WS(' is a text', 0, errors), [[WS.type], 1])
+      assert.deepEqual(WS(' is a text', 0, errors), [[WS.type, ' '], 1])
       assert.deepEqual(errors, [])
     })
     it('tests WS positive (when comment)', () => {
       const errors = []
-      assert.deepEqual(WS('(* comment *)is a text', 0, errors), [[WS.type], 13])
+      assert.deepEqual(WS('(* comment *)is a text', 0, errors), [[WS.type, "(* comment *)"], 13])
+      assert.deepEqual(errors, [])
+    })
+    it('tests WS positive (when comment 2)', () => {
+      const errors = []
+      assert.deepEqual(WS('(* comment * after times *)is a text', 0, errors), [[WS.type, "(* comment * after times *)"], 27])
       assert.deepEqual(errors, [])
     })
     it('tests WS negative', () => {
@@ -84,6 +89,12 @@ describe('rules', () => {
       assert.deepEqual(Conc('"quotations" $', 0, errors), expected)
       assert.deepEqual(errors, [])
     })
+    it('tests Conc positive (double quotes) with escaped \"', () => {
+      const errors = []
+      const expected = [[Conc.type.DblQuote, 'quotat\\"ions'],15]
+      assert.deepEqual(Conc('"quotat\\"ions" $', 0, errors), expected)
+      assert.deepEqual(errors, [])
+    })
     it('tests Conc negative (double quotes)', () => {
       const errors = []
       assert.deepEqual(Conc('"quotations $', 0, errors), [[null], 0])
@@ -94,6 +105,12 @@ describe('rules', () => {
       assert.deepEqual(Conc("'quotations' $", 0, errors), [[Conc.type.SglQuote, 'quotations'], 13])
       assert.deepEqual(errors, [])
     })
+    it('tests Conc positive (single quotes) with escaped \'', () => {
+      const errors = []
+      const expected = [[Conc.type.DblQuote, 'quotat\\\'ions'],15]
+      assert.deepEqual(Conc('"quotat\\\'ions" $', 0, errors), expected)
+      assert.deepEqual(errors, [])
+    })
     it('tests Conc negative (single quotes)', () => {
       const errors = []
       assert.deepEqual(Conc("'quotations $", 0, errors), [[null], 0])
@@ -102,6 +119,11 @@ describe('rules', () => {
     it('tests Conc positive (regex)', () => {
       const errors = []
       assert.deepEqual(Conc('/[]/ $', 0, errors), [[Conc.type.Regex, '[]'], 5])
+      assert.deepEqual(errors, [])
+    })
+    it('tests Conc positive (regex) with escaped \\/', () => {
+      const errors = []
+      assert.deepEqual(Conc('/[\\/]/ $', 0, errors), [[Conc.type.Regex, '[\\/]'], 7])
       assert.deepEqual(errors, [])
     })
     it('tests Conc negative (regex)', () => {

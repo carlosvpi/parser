@@ -1,8 +1,8 @@
 {
   "name": "@carlosvpi/parser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Parsing utility",
-  "main": "index.js",
+  "main": "parser.min.js",
   "scripts": {
     "test": "mocha"
   },
