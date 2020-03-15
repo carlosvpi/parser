@@ -135,7 +135,7 @@ const parser = module.exports = (grammar) => {
   const grammarErrors = []
   const parsedGrammar = EBNF(grammar, 0, grammarErrors)
   if (grammarErrors.length) {
-    throw new Error(grammarErrors.join('\n'), { grammar, parsedGrammar })
+    console.error(grammarErrors.join('\n'))
   }
   const [[_, ...ruleNodes], _2] = parsedGrammar
   const hash = ruleNodes.reduce((hash, [_2, head, body]) => {
@@ -151,13 +151,13 @@ const parser = module.exports = (grammar) => {
       const errors = []
       const result = hash[nt](input, 0, errors)
       if (!Array.isArray(result)) {
-        throw new Error(`Unexpected error: invalid returned value. Please, report it to https://github.com/carlosvpi/parser/issues`, { result, hash, axiom, input })
+        console.error(`Unexpected error: invalid returned value. Please, report it to https://github.com/carlosvpi/parser/issues`)
       }
       const [tree, endIndex] = result
       if (errors.length) {
-        throw new Error(errors.join('\n'), { rawTree, endIndex })
+        console.error(errors.join('\n'))
       } else if (endIndex < input.length) {
-        throw new Error(`Input continues after end of parsing: ${input.slice(endIndex, endIndex + 50)}..., for a total of ${input.length - endIndex} characters` , { rawTree, endIndex })
+        console.error(`Input continues after end of parsing: ${input.slice(endIndex, endIndex + 40).split("\n").join("\\n")}..., for a total of ${input.length - endIndex} characters`)
       }
       return tree
     }
@@ -198,7 +198,7 @@ const createParserFromNode = (node, hash) => {
     case WSs.type:
       return WSs
     default:
-      throw new Error(`Unexpected error: invalid node type. Please, report it to https://github.com/carlosvpi/parser/issues`, { type, children, hash })
+      console.error(`Unexpected error: invalid node type. Please, report it to https://github.com/carlosvpi/parser/issues`)
   }
 }
 
