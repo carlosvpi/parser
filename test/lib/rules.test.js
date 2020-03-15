@@ -71,7 +71,7 @@ describe('rules', () => {
     it('tests Conc negative (repetition), on *', () => {
       const errors = []
       assert.deepEqual(Conc('12  s*2$', 0, errors), [[null], 0])
-      assert.deepEqual(errors, ["✘ 1:4 | Expected '*', got 's*2$...'"])
+      assert.deepEqual(errors, ["✘ 1:4 | Expected '*', got 's*2$...'", "✘ 1:6 | Expected 'Non terminal', got '2$...'"])
     })
     it('tests Conc negative (repetition), on NT', () => {
       const errors = []
@@ -263,7 +263,7 @@ describe('rules', () => {
       const original = 'S ; "ab" A | S "c"; A = "b" | /[0-9]+/ S'
       const errors = []
       assert.deepEqual(EBNF(original, 0, errors), [[EBNF.type], 0])
-      assert.deepEqual(errors, ["✘ 1:2 | Expected '=', got '; \"ab\" A | S \"c\"; A = \"b\" | /[0-9]+/ S...'"])
+      assert.deepEqual(errors, ["✘ 1:2 | Expected '=', got '; \"ab\" A | S \"c\"; A = \"b\" | /[0-9]+/ S...'", "✘ 1:40 | Expected ';', got end of input"])
     })
     it('tests EBNF negative (wrong rule "=")', () => {
       const original = `S =
@@ -272,8 +272,8 @@ describe('rules', () => {
   A == "b"
     | /[0-9]+/ S;`
       const errors = []
-      assert.deepEqual(EBNF(original, 0, errors), [[EBNF.type], 0])
-      assert.deepEqual(errors, ["✘ 3:5 | Expected 'Expression after \"|\"', got '| S \"c\";\\n  A == \"b\"\\n    | /[0-9]+/ S;...'", "✘ 3:4 | Expected ';', got '|| S \"c\";\\n  A == \"b\"\\n    | /[0-9]+/ S;...'"])
+      assert.deepEqual(EBNF(original, 0, errors), [["$EBNF",["$Rule","S",["$Exp",["$Disj",["$Xcep",["$DblQuote","ab"],["$NT","A"]]],["$Disj",["$Xcep",["$NT","S"],["$DblQuote","c"]]]]],["$Rule","A",["$Exp",null]]],57])
+      assert.deepEqual(errors, ["✘ 3:5 | Expected 'Expression after \"|\"', got '| S \"c\";\\n  A == \"b\"\\n    | /[0-9]+/ S;...'", "✘ 4:5 | Expected ';', got '= \"b\"\\n    | /[0-9]+/ S;...'"])
     })
   })
 })

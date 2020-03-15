@@ -116,7 +116,7 @@ describe('hoc', () => {
     })
   })
 
-  describe('EXPCET', () => {
+  describe('EXPECT', () => {
     it('tests EXPECT positive', () => {
       const errors = []
       assert.deepEqual(EXPECT(
@@ -135,13 +135,13 @@ a
       let errors = []
       assert.deepEqual(EXPECT(
         LITERAL('that'),
-        'that',
-      )(input,7,errors), [[null], 7])
+        ['that'],
+      )(input,7,errors), [[EXPECT.type], 7])
       assert.deepEqual(errors, ["✘ 2:6 | Expected 'that', got 'this\\n  is\\na\\n    test\\n...'"])
       errors = []
       assert.deepEqual(EXPECT(
         LITERAL('This'),
-        'This',
+        ['This'],
       )('', 28, errors), [[null], 28])
       assert.deepEqual(errors, ["✘ 1:0 | Expected 'This', got end of input"])
     })
