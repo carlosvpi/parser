@@ -5,93 +5,97 @@ module.exports = require('./lib/parser')
 const MATCH = module.exports.MATCH = regex => (input, index) => {
   const match = input.slice(index).match(regex)
   if (!match || match.index !== 0) {
-    return [[null], index]
+    return [[null], index, []]
   } else {
-    return [[MATCH.type, ...match], index + match[0].length]
+    return [[MATCH.type, ...match], index + match[0].length, []]
   }
 }
 MATCH.type = '$MATCH'
 
 const LITERAL = module.exports.LITERAL = literal => (input, index) => {
   if (input.slice(index).indexOf(literal) === 0) {
-    return [[LITERAL.type, literal], index + literal.length]
+    return [[LITERAL.type, literal], index + literal.length, []]
   }
-  return [[null], index]
+  return [[null], index, []]
 }
 LITERAL.type = '$LITERAL'
 
-const CONCAT = module.exports.CONCAT = (...rules) => (input, index, errors) => {
-  let children, endIndex, root, result = []
-  const originalIndex = index
+const CONCAT = module.exports.CONCAT = (...rules) => (input, index) => {
+  let children, endIndex, root, result = [], itemErrors, errors = [], originalIndex = index
   for (let i = 0; i < rules.length; i++) {
-    [[root, ...children], endIndex] = rules[i](input, index, errors)
+    [[root, ...children], endIndex, itemErrors] = rules[i](input, index)
+
+    errors.push(...itemErrors)
     if (root === null) {
-      return [[null], originalIndex]
+      return [[null], originalIndex, errors]
     } else {
       index = endIndex
       result.push([root, ...children])
     }
   }
-  return [[CONCAT.type, ...result], index]
+  return [[CONCAT.type, ...result], index, errors]
 }
 CONCAT.type = '$CONCAT'
 
-const DISJUNCTION = module.exports.DISJUNCTION = (...rules) => (input, index, errors) => {
-  let node, endIndex, root
+const DISJUNCTION = module.exports.DISJUNCTION = (...rules) => (input, index) => {
+  let node, endIndex, root, itemErrors, errors = []
   for (let i = 0; i < rules.length; i++) {
-    [[root, ...node], endIndex] = rules[i](input, index, errors)
+    [[root, ...node], endIndex, itemErrors] = rules[i](input, index)
+    errors.push(...itemErrors)
     if (root !== null) {
-      return [[root, ...node], endIndex]
+      return [[root, ...node], endIndex, errors]
     }
   }
-  return [[null], index]
+  return [[null], index, errors]
 }
 
-const OPTION = module.exports.OPTION = rule => (input, index, errors) => {
-  const [[root, ...node], endIndex] = rule(input, index, errors)
+const OPTION = module.exports.OPTION = rule => (input, index) => {
+  const [[root, ...node], endIndex, errors] = rule(input, index)
   return node.length
-    ? [[root, ...node], endIndex]
-    : [[CONCAT.type], index]
+    ? [[root, ...node], endIndex, errors]
+    : [[CONCAT.type], index, []]
 }
 
-const CLOSURE = module.exports.CLOSURE = rule => (input, index, errors) => {
-  let [[root, ...node], endIndex] = rule(input, index, errors)
+const CLOSURE = module.exports.CLOSURE = rule => (input, index) => {
+  let [[root, ...node], endIndex, errors] = rule(input, index)
   let result = [], partial
   while (root) {
     result.push([root, ...node])
-    partial = rule(input, endIndex, errors)
+    partial = rule(input, endIndex)
     root = partial[0][0]
     node = partial[0].slice(1)
     endIndex = partial[1]
+    errors.push(...partial[2])
   }
-  return [[CONCAT.type, ...result], endIndex]
+  return [[CONCAT.type, ...result], endIndex, errors]
 }
 
-const REPETITION = module.exports.REPETITION = (times, rule) => (input, index, errors) => {
-  let root, node, endIndex, result = []
+const REPETITION = module.exports.REPETITION = (times, rule) => (input, index) => {
+  let root, node, endIndex, result = [], itemErrors, errors = []
   for (let i = 0; i < times; i++) {
-    [[root, ...node], endIndex] = rule(input, index, errors)
-    if (!node.length) {
-      return [[null], index]
+    [[root, ...node], endIndex, itemErrors] = rule(input, index)
+    errors.push(...itemErrors)
+    if (root === null) {
+      return [[null], index, errors]
     }
     index = endIndex
     result.push([root, ...node])
   }
-  return [[CONCAT.type, ...result], index]
+  return [[CONCAT.type, ...result], index, errors]
 }
 
-const EXCEPTION = module.exports.EXCEPTION = (rule, exceptRule = () => [[null]]) => (input, index, errors) => {
-  const [[root, ...node], endIndex] = rule(input, index, errors)
-  const [[_, ...exceptNode]] = exceptRule(input, index)
-  if (!root || exceptNode.length) {
-    return [[null], index]
+const EXCEPTION = module.exports.EXCEPTION = (rule, exceptRule = () => [[null]]) => (input, index) => {
+  const [[root, ...node], endIndex, errors] = rule(input, index)
+  const [[exceptRoot]] = exceptRule(input, index)
+  if (!root || exceptRoot) {
+    return [[null], index, errors]
   }
-  return [[root, ...node], endIndex]
+  return [[root, ...node], endIndex, errors]
 }
 
-const EXPECT = module.exports.EXPECT = (rule, expected, recoveryRule = (x, index) => [[null], index]) => (input, index, errors) => {
-  const result = rule(input, index, errors)
-  const [[root, ...node], endIndex] = result
+const EXPECT = module.exports.EXPECT = (rule, expected) => (input, index) => {
+  const result = rule(input, index)
+  let [[root, ...node], endIndex, errors] = result
   if (root === null) {
     const got = input.length <= endIndex
       ? 'end of input'
@@ -102,7 +106,13 @@ const EXPECT = module.exports.EXPECT = (rule, expected, recoveryRule = (x, index
     const line = lines.length
     const col = lines[line - 1].length
     errors.push(`✘ ${line}:${col} | Expected '${expected}', got ${got}`)
-    return recoveryRule(input, index)
+    let auxIndex = index, newErrors = []
+    if (auxIndex < input.length) {
+      do {
+        [[root, ...node], endIndex, newErrors] = rule(input, ++auxIndex)
+      } while(!root && auxIndex < input.length)
+    }
+    return [[root, ...node], endIndex, [...errors, ...newErrors]]
   }
   return result
 }
@@ -132,54 +142,43 @@ const {
 } = require('./hoc')
 
 const parser = module.exports = (grammar) => {
-  const grammarErrors = []
-  const parsedGrammar = EBNF(grammar, 0, grammarErrors)
+  const [[_, ...ruleNodes], _2, grammarErrors] = EBNF(grammar, 0)
   if (grammarErrors.length) {
-    console.error(grammarErrors.join('\n'))
+    throw new Error(grammarErrors.join('\n'))
   }
-  const [[_, ...ruleNodes], _2] = parsedGrammar
   const hash = ruleNodes.reduce((hash, [_2, head, body]) => {
-    hash[head] = (input, index, errors) => {
+    hash[head] = (input, index = 0) => {
       const ruleParser = createParserFromNode(body, hash)
-      const [node, rest] = ruleParser(input, index, errors)
-      return [[head, node], rest]
+      const [node, endIndex, errors] = ruleParser(input, index)
+      return node[0]
+        ? [[head, node], endIndex, errors]
+        : [[null], endIndex, errors]
     }
     return hash
   }, {})
-  return Object.keys(hash).reduce((parser, nt) => {
-    parser[nt] = (input) => {
-      const errors = []
-      const result = hash[nt](input, 0, errors)
-      if (!Array.isArray(result)) {
-        console.error(`Unexpected error: invalid returned value. Please, report it to https://github.com/carlosvpi/parser/issues`)
-      }
-      const [tree, endIndex] = result
-      if (errors.length) {
-        console.error(errors.join('\n'))
-      } else if (endIndex < input.length) {
-        console.error(`Input continues after end of parsing: ${input.slice(endIndex, endIndex + 40).split("\n").join("\\n")}..., for a total of ${input.length - endIndex} characters`)
-      }
-      return tree
-    }
-    return parser
-  }, {})
+
+  return hash
 }
 
 const createParserFromNode = (node, hash) => {
   const [type, ...children] = node
-  const manyRules = (ruleNode, index) => {
-    const parser = createParserFromNode(ruleNode, hash)
-    return index ? EXPECT(parser) : parser
-  }
   switch (type) {
     case Exp.type:
       return DISJUNCTION(...children.map(v => createParserFromNode(v, hash)))
     case Disj.type:
       return EXCEPTION(createParserFromNode(children[0], hash), children[1] ? createParserFromNode(children[1], hash) : undefined)
     case Xcep.type:
-      return CONCAT(...children.map(manyRules))
+      return CONCAT(...children.map((ruleNode, index) => {
+        const parser = createParserFromNode(ruleNode, hash)
+        return index ? EXPECT(parser, `non-terminal ${ruleNode[1]}`) : parser
+      }))
     case NT.type:
-      return hash[children[0]]
+      return (input, index) => {
+        if (typeof hash[children[0]] !== 'function') {
+          return [[null], index, [`✘ Undefined non-terminal '${children[0]}'`]]
+        }
+        return hash[children[0]](input, index)
+      }
     case Conc.type.Repetition:
       return REPETITION(children[0], createParserFromNode(children[1], hash))
     case Conc.type.DblQuote:
@@ -192,13 +191,13 @@ const createParserFromNode = (node, hash) => {
     case Conc.type.Closure:
       return CLOSURE(createParserFromNode(children[0], hash))
     case Conc.type.Group:
-      return createParserFromNode(children[0], hash) // ADD STH TO IDENTIFY THAT THIS IS A GROUP
+      return createParserFromNode(children[0], hash)
     case WS.type:
       return WS
     case WSs.type:
       return WSs
     default:
-      console.error(`Unexpected error: invalid node type. Please, report it to https://github.com/carlosvpi/parser/issues`)
+      (input, index) => [[null], index, `✘ Unexpected error: invalid node type. Please, report it to https://github.com/carlosvpi/parser/issues`]
   }
 }
 
@@ -215,33 +214,33 @@ const {
   EXPECT
 } = require('./hoc')
 
-const WS = module.exports.WS = (input, index, errors) => {
-  const [[root, node], endIndex] = MATCH(/([\ \n\t]|\(\*([^\*]|\*(?!\)))*\*\))/)(input, index, errors)
+const WS = module.exports.WS = (input, index) => {
+  const [[root, node], endIndex, errors] = MATCH(/([\ \n\t]|\(\*([^\*]|\*(?!\)))*\*\))/)(input, index)
 
   return root
-    ? [[WS.type, node], endIndex]
-    : [[null], endIndex]
+    ? [[WS.type, node], endIndex, errors]
+    : [[null], endIndex, errors]
 }
 WS.type = `$WS`
 
-const WSs = module.exports.WSs = (input, index, errors) => {
-  const [_, endIndex] = CLOSURE(WS)(input, index, errors)
+const WSs = module.exports.WSs = (input, index) => {
+  const [_, endIndex, errors] = CLOSURE(WS)(input, index)
 
-  return [[WSs.type], endIndex]
+  return [[WSs.type], endIndex, errors]
 }
 WSs.type = `$WSs`
 
-const NT = module.exports.NT = (input, index, errors) => {
-  const [[root, node], endIndex] = CONCAT(MATCH(/[a-zA-Z_][a-zA-Z0-9_]*/), WSs)(input, index, errors)
+const NT = module.exports.NT = (input, index) => {
+  const [[root, node], endIndex, errors] = CONCAT(MATCH(/[a-zA-Z_][a-zA-Z0-9_]*/), WSs)(input, index)
 
   return node
-    ? [[NT.type, node[1]], endIndex]
-    : [[null], index]
+    ? [[NT.type, node[1]], endIndex, errors]
+    : [[null], index, errors]
 }
 NT.type = `$NT`
 
-const Conc = module.exports.Conc = (input, index, errors) => {
-  const [[root, ...node], endIndex] = DISJUNCTION(
+const Conc = module.exports.Conc = (input, index) => {
+  const [[root, ...node], endIndex, errors] = DISJUNCTION(
     NT,
     CONCAT(
       MATCH(/[0-9]+/),
@@ -295,8 +294,11 @@ const Conc = module.exports.Conc = (input, index, errors) => {
       EXPECT(LITERAL('?'), '?'),
       WSs
     )
-  )(input, index, errors)
+  )(input, index)
 
+  if (index === 527) {
+    // debugger
+  }
 
   const result = root === null ? [null]
     : root === NT.type ? [NT.type, ...node]
@@ -309,7 +311,7 @@ const Conc = module.exports.Conc = (input, index, errors) => {
     : node[0][0] === LITERAL.type && node[0][1] === '(' ? [Conc.type.Group, node[2]]
     : [null]
 
-  return [result, endIndex]
+  return [result, endIndex, errors]
 }
 Conc.type = {
   Repetition: `$Repetition`,
@@ -321,17 +323,17 @@ Conc.type = {
   Group: `$Group`
 }
 
-const Xcep = module.exports.Xcep = (input, index, errors) => {
-  const [[root, ...node], endIndex] = CONCAT(Conc, CLOSURE(Conc))(input, index, errors)
+const Xcep = module.exports.Xcep = (input, index) => {
+  const [[root, ...node], endIndex, errors] = CONCAT(Conc, CLOSURE(Conc))(input, index)
 
   return root !== null
-    ? [[Xcep.type, ...(node ? [node[0], ...(node[1] ? node[1].slice(1) : [])] : [])], endIndex]
-    : [[null], endIndex]
+    ? [[Xcep.type, ...(node ? [node[0], ...(node[1] ? node[1].slice(1) : [])] : [])], endIndex, errors]
+    : [[null], endIndex, errors]
 }
 Xcep.type = `$Xcep`
 
-const Disj = module.exports.Disj = (input, index, errors) => {
-  const [[root, ...node], endIndex] = CONCAT(
+const Disj = module.exports.Disj = (input, index) => {
+  const [[root, ...node], endIndex, errors] = CONCAT(
     Xcep,
     OPTION(
       CONCAT(
@@ -340,17 +342,17 @@ const Disj = module.exports.Disj = (input, index, errors) => {
         EXPECT(Xcep, 'Expression after "-"')
       )
     )
-  )(input, index, errors)
+  )(input, index)
 
 
   return root !== null
-    ? [[Disj.type, ...[node[0], ...(node[1] && node[1][1] ? [node[1][3]] : [])]], endIndex]
-    : [[null], endIndex]
+    ? [[Disj.type, ...[node[0], ...(node[1] && node[1][1] ? [node[1][3]] : [])]], endIndex, errors]
+    : [[null], endIndex, errors]
 }
 Disj.type = `$Disj`
 
-const Exp = module.exports.Exp = (input, index, errors) => {
-  const [[_, ...node], endIndex] = CONCAT(
+const Exp = module.exports.Exp = (input, index) => {
+  const [[_, ...node], endIndex, errors] = CONCAT(
     Disj,
     CLOSURE(
       CONCAT(
@@ -359,35 +361,35 @@ const Exp = module.exports.Exp = (input, index, errors) => {
         EXPECT(Disj, 'Expression after "|"')
       )
     )
-  )(input, index, errors)
+  )(input, index)
 
-  return [[Exp.type, ...(node && [node[0], ...(node[1] && node[1] ? node[1].slice(1).map(item => item[3]) : [])])], endIndex]
+  return [[Exp.type, ...(node && [node[0], ...(node[1] && node[1] ? node[1].slice(1).map(item => item[3]) : [])])], endIndex, errors]
 }
 Exp.type = `$Exp`
 
-const Rule = module.exports.Rule = (input, index, errors) => {
-  const [[_, ...node], endIndex] = CONCAT(
+const Rule = module.exports.Rule = (input, index) => {
+  const [[_, ...node], endIndex, errors] = CONCAT(
     NT,
     EXPECT(LITERAL('='), '='),
     WSs,
-    EXPECT(Exp, 'Expression after "="'),
+    EXPECT(Exp, 'Body of the rule'),
     EXPECT(LITERAL(';'), ';'),
     WSs
-  )(input, index, errors)
+  )(input, index)
 
   const head = (node && node[0] && node[0][1]) || null
   const body = (node && node[3]) || null
 
   return head && body
-    ? [[Rule.type, head, body], endIndex]
-    : [[null], index]
+    ? [[Rule.type, head, body], endIndex, errors]
+    : [[null], index, errors]
 }
 Rule.type = `$Rule`
 
-const EBNF = module.exports.EBNF = (input, index, errors) => {
-  const [[_, ...node], endIndex] = CONCAT(WSs, CLOSURE(Rule))(input, index, errors)
+const EBNF = module.exports.EBNF = (input, index) => {
+  const [[_, ...node], endIndex, errors] = CONCAT(WSs, CLOSURE(Rule))(input, index)
 
-  return [[EBNF.type, ...node[1].slice(1)], endIndex]
+  return [[EBNF.type, ...node[1].slice(1)], endIndex, errors]
 }
 EBNF.type = `$EBNF`
 

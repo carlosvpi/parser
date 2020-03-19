@@ -1,5 +1,5 @@
 # @carlosvpi/parser
-A ~6kB Parsing utility
+A <6kB Parsing utility
 
 ## Install
 
@@ -53,13 +53,17 @@ The grammar that the `getParser` function (from `@carlosvpi/parser`) takes is a 
 
 The result of `parser[head](input)` is a tree where nodes have this shape:
 
-`[root, ...children]`
+`[node, endIndex, errors]`
 
-The `root` is a string with these possible values:
+`endIndex` is the las index of the input that has been parsed. If it does not equal the length of the input, it means that the rest of the input does not follow the grammar.
 
-* '$LITERAL': has only one child, the parsed literal,
+`errors` is a list of strings, each indicating a possible error during the parsing. Erros have this shape: `"✘ 2:12 | Expected 'non-terminal W', got 'rest of input"`
+
+The `node` is a pair `[root, ...children]`, where `root` is a string with these possible values:
+
+* '$LITERAL': has only one child, the parsed literal as a string,
 * '$MATCH': its children are the result of applying a regex to the input using js regex match,
-* '$CONCAT': its children are other nodes,
+* '$CONCAT': its children are other nodes as an array,
 * `head`: this node corresponds to the parsing the input using a rule `head`
 
 ### Example
@@ -70,7 +74,7 @@ This code
 parser(`
   S = 's' A | '0';
   A = 'a' S;
-`).S('sasa0')
+`).S('sasa0')[0]
 ```
 
 produces this tree:
