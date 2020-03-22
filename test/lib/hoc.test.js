@@ -8,7 +8,7 @@ const {
   CLOSURE,
   REPETITION,
   EXCEPTION,
-  EXPECT
+  expect
 } = require('../../lib/hoc')
 
 describe('hoc', () => {
@@ -19,7 +19,7 @@ describe('hoc', () => {
       assert.deepEqual(LITERAL('this')(input,0), [[LITERAL.type, 'this'], 4, []])
     })
     it('tests LITERAL negative', () => {
-      assert.deepEqual(LITERAL('that')(input,0), [[null], 0, []])
+      assert.deepEqual(LITERAL('that')(input,0), [[null], 0, ["✘ 1:0 | Expected 'that', got 'this is a text...'"]])
     })
   })
 
@@ -28,7 +28,7 @@ describe('hoc', () => {
       assert.deepEqual(MATCH(/\w+/)(input,0), [[MATCH.type, 'this'], 4, []])
     })
     it('tests MATCH negative', () => {
-      assert.deepEqual(MATCH(/[q]h?i\w/)(input,0), [[null], 0, []])
+      assert.deepEqual(MATCH(/[q]h?i\w/)(input,0), [[null], 0, ["✘ 1:0 | Expected '/[q]h?i\\w/', got 'this is a text...'"]])
     })
   })
 
@@ -45,7 +45,7 @@ describe('hoc', () => {
         LITERAL('this'),
         MATCH(/[ \t\n]/),
         LITERAL('was'),
-      )(input,0), [[null], 0, []])
+      )(input,0), [[null], 5, ["✘ 1:5 | Expected 'was', got 'is a text...'"]])
     })
   })
 
@@ -56,11 +56,23 @@ describe('hoc', () => {
         LITERAL('that'),
       )(input,0), [[LITERAL.type, 'this'], 4, []])
     })
+    it('tests DISJUNCTION deep positive', () => {
+      assert.deepEqual(DISJUNCTION(
+        CONCAT(LITERAL('this'), LITERAL(' '), LITERAL('was')),
+        CONCAT(LITERAL('this'), LITERAL(' '), LITERAL('is')),
+      )(input,0), [['$CONCAT',['$LITERAL','this'],['$LITERAL',' '],['$LITERAL','is']],7,[]])
+    })
     it('tests DISJUNCTION negative', () => {
       assert.deepEqual(DISJUNCTION(
         LITERAL('these'),
         LITERAL('that'),
-      )(input,0), [[null], 0, []])
+      )(input,0), [[null], 0, ["✘ 1:0 | Expected 'that', got 'this is a text...'"]])
+    })
+    it('tests DISJUNCTION deep negative', () => {
+      assert.deepEqual(DISJUNCTION(
+        CONCAT(LITERAL('this'), LITERAL(' '), LITERAL('was')),
+        CONCAT(LITERAL('this'), LITERAL(' '), LITERAL('will')),
+      )(input,0), [[null], 5, ["✘ 1:5 | Expected 'will', got 'is a text...'"]])
     })
   })
 
@@ -99,7 +111,7 @@ describe('hoc', () => {
     it('tests REPETITION negative', () => {
       assert.deepEqual(REPETITION(
         5, MATCH('\W')
-      )(input,0), [[null], 0, []])
+      )(input,0), [[null], 0, ["✘ 1:0 | Expected 'W', got 'this is a text...'"]])
     })
   })
 
@@ -116,28 +128,19 @@ describe('hoc', () => {
     })
   })
 
-  describe('EXPECT', () => {
-    it('tests EXPECT positive', () => {
-      assert.deepEqual(EXPECT(
-        LITERAL('this'),
-        'this'
-      )(input,0), [[LITERAL.type, 'this'], 4, []])
+  describe('expect', () => {
+    it('tests expect positive', () => {
+      assert.deepEqual(expect('this', input,0), [[null], 0, ["✘ 1:0 | Expected 'this', got 'this is a text...'"]])
     })
-    it('tests EXPECT negative', () => {
+    it('tests expect negative', () => {
       const input = `
       this
   is
 a
     test
 `
-      assert.deepEqual(EXPECT(
-        LITERAL('that'),
-        ['that'],
-      )(input,7), [[null], 28, ["✘ 2:6 | Expected 'that', got 'this\\n  is\\na\\n    test\\n...'"]])
-      assert.deepEqual(EXPECT(
-        LITERAL('This'),
-        ['This'],
-      )('', 28), [[null], 28, ["✘ 1:0 | Expected 'This', got end of input"]])
+      assert.deepEqual(expect('that',input,7), [[null], 7, ["✘ 2:6 | Expected 'that', got 'this\\n  is\\na\\n    test\\n...'"]])
+      assert.deepEqual(expect('This', '', 28), [[null], 28, ["✘ 1:0 | Expected 'This', got end of input"]])
     })
   })
 })

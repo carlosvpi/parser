@@ -24,7 +24,7 @@ describe('rules', () => {
       assert.deepEqual(WS('(* comment * after times *)is a text', 0), [[WS.type, "(* comment * after times *)"], 27, []])
     })
     it('tests WS negative', () => {
-      assert.deepEqual(WS('this is a text', 0), [[null], 0, []])
+      assert.deepEqual(WS('this is a text', 0), [[null], 0, ["✘ 1:0 | Expected '/([\\ \\n\\t]|\\(\\*([^\\*]|\\*(?!\\)))*\\*\\))/', got 'this is a text...'"]])
     })
   })
 
@@ -42,7 +42,7 @@ describe('rules', () => {
       assert.deepEqual(NT('this is a text', 0), [[NT.type, 'this'], 5, []])
     })
     it('tests NT negative', () => {
-      assert.deepEqual(NT('$this is a text', 0), [[null], 0, []])
+      assert.deepEqual(NT('$this is a text', 0), [[null], 0, ["✘ 1:0 | Expected '/[a-zA-Z_][a-zA-Z0-9_]*/', got '$this is a text...'"]])
     })
   })
 
@@ -51,10 +51,10 @@ describe('rules', () => {
       assert.deepEqual(Conc('12  *s$', 0), [[Conc.type.Repetition,'12','s'], 6,[]])
     })
     it('tests Conc negative (repetition), on *', () => {
-      assert.deepEqual(Conc('12  s*2$', 0), [[null], 0, ["✘ 1:4 | Expected '*', got 's*2$...'", "✘ 1:6 | Expected 'Non terminal', got '2$...'"]])
+      assert.deepEqual(Conc('12  s*2$', 0), [[null], 4, ["✘ 1:4 | Expected '*', got 's*2$...'"]])
     })
     it('tests Conc negative (repetition), on NT', () => {
-      assert.deepEqual(Conc('12 *', 0), [[null], 0, ["✘ 1:4 | Expected 'Non terminal', got end of input"]])
+      assert.deepEqual(Conc('12 *', 0), [[null], 4, ["✘ 1:4 | Expected '/[a-zA-Z_][a-zA-Z0-9_]*/', got end of input"]])
     })
     it('tests Conc positive (NT)', () => {
       assert.deepEqual(Conc('potato  *s$', 0), [[NT.type, 'potato'], 8, []])
@@ -66,7 +66,7 @@ describe('rules', () => {
       assert.deepEqual(Conc('"quotat\\"ions" $', 0), [[Conc.type.DblQuote, 'quotat\\"ions'],15,[]])
     })
     it('tests Conc negative (double quotes)', () => {
-      assert.deepEqual(Conc('"quotations $', 0), [[null], 0, ["✘ 1:13 | Expected '\"', got end of input"]])
+      assert.deepEqual(Conc('"quotations $', 0), [[null], 13, ["✘ 1:13 | Expected '\"', got end of input"]])
     })
     it('tests Conc positive (single quotes)', () => {
       assert.deepEqual(Conc("'quotations' $", 0), [[Conc.type.SglQuote, 'quotations'], 13, []])
@@ -75,7 +75,7 @@ describe('rules', () => {
       assert.deepEqual(Conc('"quotat\\\'ions" $', 0), [[Conc.type.DblQuote, 'quotat\\\'ions'],15, []])
     })
     it('tests Conc negative (single quotes)', () => {
-      assert.deepEqual(Conc("'quotations $", 0), [[null], 0, ["✘ 1:13 | Expected ''', got end of input"]])
+      assert.deepEqual(Conc("'quotations $", 0), [[null], 13, ["✘ 1:13 | Expected ''', got end of input"]])
     })
     it('tests Conc positive (regex)', () => {
       assert.deepEqual(Conc('/[]/ $', 0), [[Conc.type.Regex, '[]'], 5, []])
@@ -84,7 +84,7 @@ describe('rules', () => {
       assert.deepEqual(Conc('/[\\/]/ $', 0), [[Conc.type.Regex, '[\\/]'], 7, []])
     })
     it('tests Conc negative (regex)', () => {
-      assert.deepEqual(Conc('/[] $', 0), [[null], 0, ["✘ 1:5 | Expected '/', got end of input"]])
+      assert.deepEqual(Conc('/[] $', 0), [[null], 5, ["✘ 1:5 | Expected '/', got end of input"]])
     })
     it('tests Conc positive ([])', () => {
       assert.deepEqual(Conc('[ potato]$', 0), [[Conc.type.Option,[Exp.type, [Disj.type,[Xcep.type,[NT.type,'potato']]]]],9,[]])
@@ -96,19 +96,19 @@ describe('rules', () => {
       assert.deepEqual(Conc('[ potato | banana | pineaple]$', 0), [[Conc.type.Option,[Exp.type, [Disj.type,[Xcep.type,[NT.type,"potato"]]],[Disj.type,[Xcep.type,[NT.type,"banana"]]], [Disj.type,[Xcep.type,[NT.type,"pineaple"]]]]],29,[]])
     })
     it('tests Conc negative ([])', () => {
-      assert.deepEqual(Conc('[ potato$', 0), [[null], 0, ["✘ 1:8 | Expected ']', got '$...'"]])
+      assert.deepEqual(Conc('[ potato$', 0), [[null], 8, ["✘ 1:8 | Expected ']', got '$...'"]])
     })
     it('tests Conc positive ({})', () => {
       assert.deepEqual(Conc('{ potato}$', 0), [[Conc.type.Closure,[Exp.type, [Disj.type,[Xcep.type,[NT.type,'potato']]]]],9,[]])
     })
     it('tests Conc negative ({})', () => {
-      assert.deepEqual(Conc('{ potato$', 0), [[null], 0,["✘ 1:8 | Expected '}', got '$...'"]])
+      assert.deepEqual(Conc('{ potato$', 0), [[null], 8,["✘ 1:8 | Expected '}', got '$...'"]])
     })
     it('tests Conc positive (())', () => {
       assert.deepEqual(Conc('( potato)$', 0), [[Conc.type.Group,[Exp.type, [Disj.type,[Xcep.type,[NT.type,'potato']]]]],9,[]])
     })
     it('tests Conc negative (())', () => {
-      assert.deepEqual(Conc('( potato$', 0), [[null], 0, ["✘ 1:8 | Expected ')', got '$...'"]])
+      assert.deepEqual(Conc('( potato$', 0), [[null], 8, ["✘ 1:8 | Expected ')', got '$...'"]])
     })
   // it('tests Conc positive (??)', () => {
   //  assert.deepEqual(Conc('? potato?$', { errors, special: LITERAL(' potato') }), [['?', ' potato', '?', []], '$'])
@@ -122,7 +122,7 @@ describe('rules', () => {
   //  assert.deepEqual(errors, ["✘ 1:0 | Expected '?', got '$...'"])
   // })
     it('tests Conc negative', () => {
-      assert.deepEqual(Conc('!$', 0), [[null], 0, []])
+      assert.deepEqual(Conc('!$', 0), [[null], 0, ["✘ 1:0 | Expected '?', got '!$...'"]])
     })
   })
   describe('Xcep', () => {
@@ -168,15 +168,15 @@ describe('rules', () => {
       assert.deepEqual(EBNF('S = "ab" A | S "c"; A = "b" | /[0-9]+/ S;', 0), [["$EBNF",["$Rule","S",["$Exp",["$Disj",["$Xcep",["$DblQuote","ab"],["$NT","A"]]],["$Disj",["$Xcep",["$NT","S"],["$DblQuote","c"]]]]],["$Rule","A",["$Exp",["$Disj",["$Xcep",["$DblQuote","b"]]],["$Disj",["$Xcep",["$Regex","[0-9]+"],["$NT","S"]]]]]],41,[]])
     })
     it('tests EBNF negative (missing ";")', () => {
-      assert.deepEqual(EBNF('S ; "ab" A | S "c"; A = "b" | /[0-9]+/ S', 0), [[EBNF.type], 0, ["✘ 1:2 | Expected '=', got '; \"ab\" A | S \"c\"; A = \"b\" | /[0-9]+/ S...'", "✘ 1:40 | Expected ';', got end of input"]])
+      assert.deepEqual(EBNF('S ; "ab" A | S "c"; A = "b" | /[0-9]+/ S', 0), [[EBNF.type], 0, []])
     })
     it('tests EBNF negative (wrong rule "=")', () => {
       const original = `S =
     "ab" A
-    || S "c";
+    | S "c";
   A == "b"
     | /[0-9]+/ S;`
-      assert.deepEqual(EBNF(original, 0), [["$EBNF",["$Rule","S",["$Exp",["$Disj",["$Xcep",["$DblQuote","ab"],["$NT","A"]]],["$Disj",["$Xcep",["$NT","S"],["$DblQuote","c"]]]]],["$Rule","A",["$Exp",null]]],57,["✘ 3:5 | Expected 'Expression after \"|\"', got '| S \"c\";\\n  A == \"b\"\\n    | /[0-9]+/ S;...'", "✘ 4:5 | Expected ';', got '= \"b\"\\n    | /[0-9]+/ S;...'"]])
+      assert.deepEqual(EBNF(original, 0), [["$EBNF",["$Rule","S",["$Exp",["$Disj",["$Xcep",["$DblQuote","ab"],["$NT","A"]]],["$Disj",["$Xcep",["$NT","S"],["$DblQuote","c"]]]]]],30,[]])
     })
   })
 })

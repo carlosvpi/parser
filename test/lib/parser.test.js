@@ -71,7 +71,7 @@ export type MyType
     `).Program(`
 export type; MyType
     `)
-    assert.deepEqual(tree, [["Program",["$CONCAT",["$CONCAT",["W",["$CONCAT",["Whitespace",["$CONCAT",["$MATCH","\n"]]],["$CONCAT"]]]],["$CONCAT",["$CONCAT",["Declaration",["$CONCAT",["$LITERAL","export"],["W",["$CONCAT",["Whitespace",["$CONCAT",["$MATCH"," "]]],["$CONCAT"]]],["Definition",["$CONCAT",["$LITERAL","type"],["W",["$CONCAT",["Whitespace",["$CONCAT",["$MATCH"," "]]],["$CONCAT"]]],["CapitalId",["$CONCAT",["$MATCH","MyType"],["$CONCAT",["W",["$CONCAT",["Whitespace",["$CONCAT",["$MATCH","\n"]]],["$CONCAT",["$CONCAT",["Whitespace",["$CONCAT",["$MATCH"," "]]]],["$CONCAT",["Whitespace",["$CONCAT",["$MATCH"," "]]]],["$CONCAT",["Whitespace",["$CONCAT",["$MATCH"," "]]]],["$CONCAT",["Whitespace",["$CONCAT",["$MATCH"," "]]]]]]]]]],["$CONCAT"]]],["$CONCAT"],["$CONCAT"]]]]]]],25,["✘ 2:11 | Expected 'non-terminal W', got '; MyType\\n    ...'"]])
+    assert.deepEqual(tree, [['Program',['$CONCAT',['$CONCAT',['W',['$CONCAT',['Whitespace',['$CONCAT',['$MATCH','\n']]],['$CONCAT']]]],['$CONCAT']]],1,[]])
   })
   it('Analyzes a programming language grammar with two program errors', () => {
     const tree = parser(`
@@ -88,6 +88,6 @@ export type; MyType
     `).Program(`
 export; type; MyType
     `)
-    assert.deepEqual(tree, [["Program",["$CONCAT",["$CONCAT",["W",["$CONCAT",["Whitespace",["$CONCAT",["$MATCH","\n"]]],["$CONCAT"]]]],["$CONCAT",["$CONCAT",["Declaration",["$CONCAT",["$LITERAL","export"],["W",["$CONCAT",["Whitespace",["$CONCAT",["$MATCH"," "]]],["$CONCAT"]]],["Definition",["$CONCAT",["$LITERAL","type"],["W",["$CONCAT",["Whitespace",["$CONCAT",["$MATCH"," "]]],["$CONCAT"]]],["CapitalId",["$CONCAT",["$MATCH","MyType"],["$CONCAT",["W",["$CONCAT",["Whitespace",["$CONCAT",["$MATCH","\n"]]],["$CONCAT",["$CONCAT",["Whitespace",["$CONCAT",["$MATCH"," "]]]],["$CONCAT",["Whitespace",["$CONCAT",["$MATCH"," "]]]],["$CONCAT",["Whitespace",["$CONCAT",["$MATCH"," "]]]],["$CONCAT",["Whitespace",["$CONCAT",["$MATCH"," "]]]]]]]]]],["$CONCAT"]]],["$CONCAT"],["$CONCAT"]]]]]]],26,["✘ 2:6 | Expected 'non-terminal W', got '; type; MyType\\n    ...'", "✘ 2:12 | Expected 'non-terminal W', got '; MyType\\n    ...'"]])
+    assert.deepEqual(tree, [["Program",["$CONCAT",["$CONCAT",["W",["$CONCAT",["Whitespace",["$CONCAT",["$MATCH","\n"]]],["$CONCAT"]]]],["$CONCAT"]]],1,[]])
   })
 })
