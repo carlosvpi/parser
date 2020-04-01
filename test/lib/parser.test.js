@@ -90,4 +90,10 @@ export; type; MyType
     `)
     assert.deepEqual(tree, [["Program",["$CONCAT",["$CONCAT",["W",["$CONCAT",["Whitespace",["$CONCAT",["$MATCH","\n"]]],["$CONCAT"]]]],["$CONCAT"]]],1,[]])
   })
+  it('Gives proper errors for a failed clausure', () => {
+    const tree = parser(`
+      S = { 'a' 'b' };
+    `).S(`ababa`)
+    assert.deepEqual(tree, null)
+  })
 })

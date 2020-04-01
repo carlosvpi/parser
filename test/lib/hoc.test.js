@@ -124,13 +124,13 @@ describe('hoc', () => {
     it('tests EXCEPTION negative', () => {
       assert.deepEqual(EXCEPTION(
         MATCH(/\w+/), LITERAL('this')
-      )(input,0), [[null], 0, []])
+      )(input,0), [[null], 0, ["✘ 1:0 | Expected 'not to fit an exception rule', got 'this is a text...'"]])
     })
   })
 
   describe('expect', () => {
     it('tests expect positive', () => {
-      assert.deepEqual(expect('this', input,0), [[null], 0, ["✘ 1:0 | Expected 'this', got 'this is a text...'"]])
+      assert.deepEqual(expect('this')(input,0), "✘ 1:0 | Expected 'this', got 'this is a text...'")
     })
     it('tests expect negative', () => {
       const input = `
@@ -139,8 +139,8 @@ describe('hoc', () => {
 a
     test
 `
-      assert.deepEqual(expect('that',input,7), [[null], 7, ["✘ 2:6 | Expected 'that', got 'this\\n  is\\na\\n    test\\n...'"]])
-      assert.deepEqual(expect('This', '', 28), [[null], 28, ["✘ 1:0 | Expected 'This', got end of input"]])
+      assert.deepEqual(expect('that')(input,7), "✘ 2:6 | Expected 'that', got 'this\\n  is\\na\\n    test\\n...'")
+      assert.deepEqual(expect('This')('', 28), "✘ 1:0 | Expected 'This', got end of input")
     })
   })
 })
