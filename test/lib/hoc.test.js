@@ -9,7 +9,7 @@ const {
   REPETITION,
   EXCEPTION,
   expect
-} = require('../../lib/hoc')
+} = require('../../lib/hoc');
 
 describe('hoc', () => {
   const input = 'this is a text'
